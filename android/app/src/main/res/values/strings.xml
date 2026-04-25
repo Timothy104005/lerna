@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Lerna</string>
+    <string name="title_activity_main">Lerna</string>
+    <string name="package_name">app.lerna.mobile</string>
+    <string name="custom_url_scheme">app.lerna.mobile</string>
+</resources>

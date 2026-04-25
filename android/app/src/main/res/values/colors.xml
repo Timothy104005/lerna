@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#6F9F92</color>
+    <color name="colorPrimaryDark">#527A71</color>
+    <color name="colorAccent">#6F9F92</color>
+    <color name="lernaSurface">#F5F3EF</color>
+    <color name="lernaSplash">#FFD4AC</color>
+</resources>

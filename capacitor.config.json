@@ -1,0 +1,21 @@
+{
+  "appId": "app.lerna.mobile",
+  "appName": "Lerna",
+  "webDir": "dist/mobile-web",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0,
+      "showSpinner": false,
+      "backgroundColor": "#ffd4ac",
+      "androidScaleType": "CENTER_CROP"
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#f5f3ef",
+      "overlaysWebView": false
+    }
+  }
+}

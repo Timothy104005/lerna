@@ -1,0 +1,60 @@
+2026/04/24-06:44:57.493 54b8 Reusing MANIFEST C:\Users\hengy\AppData\Local\Google\Chrome\User Data\Default\Local Storage\leveldb/MANIFEST-000001
+2026/04/24-06:44:57.495 54b8 Recovering log #373
+2026/04/24-06:44:57.499 54b8 Reusing old log C:\Users\hengy\AppData\Local\Google\Chrome\User Data\Default\Local Storage\leveldb/000373.log 
+2026/04/24-17:34:51.032 66fc Level-0 table #377: started
+2026/04/24-17:34:51.041 66fc Level-0 table #377: 42987 bytes OK
+2026/04/24-17:34:51.045 66fc Delete type=0 #373
+2026/04/24-17:42:28.233 66fc Level-0 table #379: started
+2026/04/24-17:42:28.241 66fc Level-0 table #379: 58213 bytes OK
+2026/04/24-17:42:28.243 66fc Delete type=0 #376
+2026/04/24-17:42:28.244 66fc Compacting 4@0 + 1@1 files
+2026/04/24-17:42:28.257 66fc Generated table #380@0: 432 keys, 156842 bytes
+2026/04/24-17:42:28.257 66fc Compacted 4@0 + 1@1 files => 156842 bytes
+2026/04/24-17:42:28.258 66fc compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/04/24-17:42:28.259 66fc Delete type=2 #368
+2026/04/24-17:42:28.260 66fc Delete type=2 #371
+2026/04/24-17:42:28.260 66fc Delete type=2 #374
+2026/04/24-17:42:28.260 66fc Delete type=2 #377
+2026/04/24-17:42:28.260 66fc Delete type=2 #379
+2026/04/24-17:53:52.991 66fc Level-0 table #382: started
+2026/04/24-17:53:53.016 66fc Level-0 table #382: 42613 bytes OK
+2026/04/24-17:53:53.022 66fc Delete type=0 #378
+2026/04/24-17:57:20.034 66fc Level-0 table #384: started
+2026/04/24-17:57:20.044 66fc Level-0 table #384: 38270 bytes OK
+2026/04/24-17:57:20.047 66fc Delete type=0 #381
+2026/04/24-21:48:10.370 66fc Level-0 table #386: started
+2026/04/24-21:48:10.377 66fc Level-0 table #386: 17061 bytes OK
+2026/04/24-21:48:10.379 66fc Delete type=0 #383
+2026/04/25-07:30:14.768 66fc Level-0 table #388: started
+2026/04/25-07:30:14.779 66fc Level-0 table #388: 38882 bytes OK
+2026/04/25-07:30:14.782 66fc Delete type=0 #385
+2026/04/25-07:30:14.783 66fc Compacting 4@0 + 1@1 files
+2026/04/25-07:30:14.805 66fc Generated table #389@0: 457 keys, 204331 bytes
+2026/04/25-07:30:14.806 66fc Compacted 4@0 + 1@1 files => 204331 bytes
+2026/04/25-07:30:14.806 66fc compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/04/25-07:30:14.808 66fc Delete type=2 #380
+2026/04/25-07:30:14.808 66fc Delete type=2 #382
+2026/04/25-07:30:14.809 66fc Delete type=2 #384
+2026/04/25-07:30:14.809 66fc Delete type=2 #386
+2026/04/25-07:30:14.809 66fc Delete type=2 #388
+2026/04/25-07:36:17.134 66fc Level-0 table #391: started
+2026/04/25-07:36:17.160 66fc Level-0 table #391: 37208 bytes OK
+2026/04/25-07:36:17.162 66fc Delete type=0 #387
+2026/04/25-07:42:19.878 66fc Level-0 table #393: started
+2026/04/25-07:42:19.892 66fc Level-0 table #393: 23941 bytes OK
+2026/04/25-07:42:19.895 66fc Delete type=0 #390
+2026/04/25-08:05:06.998 54b8 Level-0 table #395: started
+2026/04/25-08:05:07.017 54b8 Level-0 table #395: 20870 bytes OK
+2026/04/25-08:05:07.018 54b8 Delete type=0 #392
+2026/04/25-13:19:29.779 66fc Level-0 table #397: started
+2026/04/25-13:19:29.791 66fc Level-0 table #397: 21374 bytes OK
+2026/04/25-13:19:29.794 66fc Delete type=0 #394
+2026/04/25-13:19:29.797 66fc Compacting 4@0 + 1@1 files
+2026/04/25-13:19:29.816 66fc Generated table #398@0: 473 keys, 213865 bytes
+2026/04/25-13:19:29.817 66fc Compacted 4@0 + 1@1 files => 213865 bytes
+2026/04/25-13:19:29.817 66fc compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/04/25-13:19:29.819 66fc Delete type=2 #389
+2026/04/25-13:19:29.820 66fc Delete type=2 #391
+2026/04/25-13:19:29.820 66fc Delete type=2 #393
+2026/04/25-13:19:29.820 66fc Delete type=2 #395
+2026/04/25-13:19:29.820 66fc Delete type=2 #397

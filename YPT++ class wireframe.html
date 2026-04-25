@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>YPT++ 我的班級 — Wireframe Mock</title>
+<style>
+  :root {
+    --bg: #faf9f6;
+    --card: #ffffff;
+    --border: #e7e2d6;
+    --border-strong: #c9c0ad;
+    --ink: #1a1a1a;
+    --muted: #8b8580;
+    --accent: #4a7c74;
+    --accent-soft: #d4e7e4;
+    --accent-dim: #eef5f3;
+    --warn: #c46a38;
+    --warn-soft: #f6e4d6;
+    --ok: #4a7c74;
+    --bad: #b34a4a;
+    --shadow: 0 1px 2px rgba(60,50,30,.04), 0 4px 12px rgba(60,50,30,.05);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "PingFang TC", sans-serif;
+    background: var(--bg); color: var(--ink); font-size: 14px; line-height: 1.55;
+  }
+  /* ============ Top bar ============ */
+  .topbar {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 24px; background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+  .brand-mark {
+    width: 24px; height: 24px; border: 2px solid #6b4a2a;
+    border-right-width: 0; border-top-width: 0; border-radius: 2px;
+  }
+  .brand small { color: var(--muted); font-weight: 400; margin-left: 6px; }
+  .role-switch { display: flex; gap: 4px; background: var(--card); padding: 3px; border-radius: 10px; border: 1px solid var(--border); }
+  .role-switch button {
+    padding: 6px 14px; border: none; background: transparent; cursor: pointer;
+    font: inherit; color: var(--muted); border-radius: 7px;
+  }
+  .role-switch button.active { background: var(--accent); color: #fff; }
+
+  /* ============ Layout ============ */
+  .app { display: grid; grid-template-columns: 220px 1fr; min-height: calc(100vh - 52px); }
+  aside {
+    border-right: 1px solid var(--border); padding: 16px 8px;
+    background: var(--bg); overflow-y: auto;
+  }
+  aside h4 { margin: 12px 10px 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  aside a {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px; border-radius: 6px; color: var(--ink);
+    font-size: 13px; cursor: pointer; text-decoration: none;
+  }
+  aside a.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  aside a:hover:not(.active) { background: #f0ebe0; }
+  aside a .tag {
+    margin-left: auto; font-size: 10px; padding: 1px 6px; border-radius: 8px;
+    background: var(--warn-soft); color: var(--warn); border: 1px solid #e9cfb5;
+  }
+  aside a .tag.new { background: var(--accent-soft); color: var(--accent); border-color: #b4d5cf; }
+  aside a.role-hidden { display: none; }
+
+  main.canvas { padding: 24px 32px; max-width: 1100px; }
+
+  /* ============ Screen frame ============ */
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .screen-head {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    padding-bottom: 12px; margin-bottom: 16px; border-bottom: 1px dashed var(--border);
+  }
+  .screen-head h1 { font-size: 18px; margin: 0 0 4px; }
+  .screen-head p { margin: 0; color: var(--muted); font-size: 12px; }
+  .screen-head .screen-meta { text-align: right; font-size: 11px; color: var(--muted); }
+
+  /* Annotation callout (design notes) */
+  .note {
+    background: #fffbf0; border: 1px solid #ecd9a8; border-left: 3px solid #c88a2a;
+    padding: 10px 14px; border-radius: 6px; font-size: 12px; color: #5a4a1e;
+    margin-bottom: 14px;
+  }
+  .note b { color: #3d3410; }
+  .note.new { background: var(--accent-dim); border-color: #b4d5cf; border-left-color: var(--accent); color: #1e4039; }
+  .note.new b { color: #0e2c27; }
+
+  /* ============ Cards ============ */
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; box-shadow: var(--shadow); margin-bottom: 14px;
+  }
+  .card h3 { margin: 0 0 10px; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+  .card h3 .pill {
+    font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 500;
+    background: var(--accent-soft); color: var(--accent);
+  }
+  .card h3 .pill.warn { background: var(--warn-soft); color: var(--warn); }
+  .card-row { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
+  .card-row-3 { display: grid; gap: 14px; grid-template-columns: 1fr 1fr 1fr; }
+  .muted { color: var(--muted); font-size: 12px; }
+  .divider { height: 1px; background: var(--border); margin: 10px 0; }
+  .btn {
+    padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border);
+    background: #fff; cursor: pointer; font: inherit; font-size: 12px;
+  }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.ghost { background: transparent; border-color: transparent; color: var(--accent); }
+  .btn.warn { background: #fff; color: var(--warn); border-color: var(--warn-soft); }
+  .btn.small { padding: 3px 8px; font-size: 11px; }
+
+  /* Avatar placeholder */
+  .avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--accent-soft); color: var(--accent);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; flex-shrink: 0;
+  }
+  .avatar.lg { width: 40px; height: 40px; font-size: 15px; }
+  .avatar.sm { width: 20px; height: 20px; font-size: 10px; }
+
+  /* Generic status chips */
+  .chip { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 8px; border: 1px solid var(--border); background: #fff; }
+  .chip.ok { background: #e6f1ef; color: var(--accent); border-color: #b4d5cf; }
+  .chip.warn { background: var(--warn-soft); color: var(--warn); border-color: #e9cfb5; }
+  .chip.bad { background: #f8e1e1; color: var(--bad); border-color: #e0b8b8; }
+  .chip.ink { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+
+  /* Progress bar */
+  .bar { height: 6px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .bar > span { display: block; height: 100%; background: var(--accent); }
+
+  /* Tables */
+  table.tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.tbl th, table.tbl td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; }
+  table.tbl th { font-size: 11px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .04em; }
+  table.tbl tr:hover { background: #fbf8ef; }
+
+  /* Grid of mini-cards */
+  .mini-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .mini {
+    background: #fff; border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; font-size: 12px;
+  }
+  .mini .k { color: var(--muted); font-size: 11px; }
+  .mini .v { font-size: 18px; font-weight: 600; margin-top: 3px; }
+
+  /* Placeholder box */
+  .ph {
+    border: 1px dashed var(--border-strong); border-radius: 6px;
+    padding: 18px; text-align: center; color: var(--muted);
+    background: repeating-linear-gradient(-45deg, transparent 0 6px, #f3eedf 6px 7px);
+  }
+
+  /* Seat grid (座號) */
+  .seat-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .seat {
+    aspect-ratio: 1; border: 1px solid var(--border); border-radius: 8px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 11px; padding: 4px; background: #fff;
+  }
+  .seat .n { font-size: 10px; color: var(--muted); }
+  .seat.absent { background: #fdf2ed; border-color: #e6c5b0; }
+  .seat.late { background: var(--warn-soft); border-color: #e9cfb5; }
+  .seat.studying { background: var(--accent-soft); border-color: #b4d5cf; position: relative; }
+  .seat.studying::after {
+    content: ""; position: absolute; top: 4px; right: 4px;
+    width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+    animation: pulse 1.6s infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+
+  /* Submission diff view */
+  .grade-split { display: grid; grid-template-columns: 1fr 280px; gap: 14px; }
+  .rubric-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border); }
+  .rubric-row:last-child { border: none; }
+  .stars { color: #c88a2a; letter-spacing: 2px; }
+
+  /* Calendar */
+  .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; font-size: 11px; }
+  .cal .day { aspect-ratio: 1; background: #fff; border: 1px solid var(--border); border-radius: 6px; padding: 4px; position: relative; }
+  .cal .day.has-exam { border-color: var(--warn); background: var(--warn-soft); }
+  .cal .day.has-task { border-color: var(--accent); background: var(--accent-soft); }
+  .cal .day.today { outline: 2px solid var(--accent); }
+  .cal .day .n { font-size: 10px; color: var(--muted); }
+  .cal .day .d { font-size: 9px; margin-top: 3px; line-height: 1.2; }
+  .cal-head { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; font-size: 10px; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
+  .cal-head div { text-align: center; }
+
+  /* Banner (class identity) */
+  .class-banner {
+    background: linear-gradient(135deg, var(--accent) 0%, #6ba19a 100%);
+    color: #fff; border-radius: 12px; padding: 20px 24px;
+    display: flex; align-items: center; gap: 16px; margin-bottom: 14px;
+  }
+  .class-crest {
+    width: 56px; height: 56px; border-radius: 12px;
+    background: rgba(255,255,255,.18); border: 2px solid rgba(255,255,255,.35);
+    display: flex; align-items: center; justify-content: center; font-size: 28px;
+  }
+  .class-banner h2 { margin: 0 0 4px; font-size: 18px; }
+  .class-banner p { margin: 0; font-size: 12px; opacity: .85; }
+
+  /* Forms */
+  .form-row { margin-bottom: 12px; }
+  .form-row label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .04em; }
+  .form-row input, .form-row textarea, .form-row select {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px;
+    font: inherit; font-size: 13px; background: #fff;
+  }
+  .form-row textarea { min-height: 80px; resize: vertical; }
+
+  /* Two-col general */
+  .two { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; }
+  @media (max-width: 900px) { .two, .card-row, .card-row-3 { grid-template-columns: 1fr; } }
+
+  /* Legend bottom bar */
+  .legend {
+    margin-top: 28px; padding: 12px 16px; background: #fff; border: 1px solid var(--border);
+    border-radius: 8px; font-size: 11px; color: var(--muted);
+  }
+  .legend span.lg-role { display: inline-block; padding: 2px 8px; border-radius: 8px; margin-right: 6px; background: var(--accent-soft); color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark"></div>
+    YPT++ <small>我的班級 / Wireframe Mock (low-fi)</small>
+  </div>
+  <div class="role-switch" id="roleSwitch">
+    <button data-role="teacher" class="active">🧑‍🏫 老師</button>
+    <button data-role="student">👨‍🎓 學生</button>
+    <button data-role="captain">🎖 班長</button>
+  </div>
+</div>
+
+<div class="app">
+<aside>
+  <h4>核心 (P0)</h4>
+  <a data-screen="home" class="active">🏠 班級首頁</a>
+  <a data-screen="tasks">📋 作業板</a>
+  <a data-screen="announce">📣 公告中心</a>
+
+  <h4>老師 / 管理端</h4>
+  <a data-screen="task-create" data-roles="teacher,captain">➕ 發派作業</a>
+  <a data-screen="submissions" data-roles="teacher,captain">📊 繳交狀態 <span class="tag">new</span></a>
+  <a data-screen="grading" data-roles="teacher">✏️ 批改介面 <span class="tag">new</span></a>
+  <a data-screen="attendance" data-roles="teacher,captain">🧍 點名 / 出席 <span class="tag">new</span></a>
+  <a data-screen="members" data-roles="teacher,captain">👥 成員 / 角色</a>
+
+  <h4>學生 / 學習產出</h4>
+  <a data-screen="submit" data-roles="student,captain">📤 繳交作業 <span class="tag new">new</span></a>
+  <a data-screen="history" data-roles="student,captain">🗂 我的繳交歷史 <span class="tag new">new</span></a>
+  <a data-screen="peer" data-roles="student,captain">🤝 同儕互評 <span class="tag new">new</span></a>
+  <a data-screen="qa">❓ 問答區</a>
+
+  <h4>共通</h4>
+  <a data-screen="calendar">📅 班級行事曆 <span class="tag new">new</span></a>
+  <a data-screen="seats">🪑 座號 / 花名冊 <span class="tag new">new</span></a>
+  <a data-screen="coedit">📝 共筆協作</a>
+  <a data-screen="resources">📚 資源中心</a>
+
+  <h4>設定 / 流程</h4>
+  <a data-screen="join" data-roles="student">🔑 加入班級</a>
+  <a data-screen="settings" data-roles="teacher">⚙️ 班級設定</a>
+  <a data-screen="archive">🗃 歷史班級 <span class="tag new">new</span></a>
+</aside>
+
+<main class="canvas">
+
+<!-- =========================================================
+     SCREEN: HOME (班級首頁) — role-differentiated
+========================================================= -->
+<section class="screen active" id="s-home">
+  <div class="screen-head">
+    <div>
+      <h1>班級首頁 <span class="muted">Class Home</span></h1>
+      <p>進入班級後的第一個畫面。依角色顯示不同操作入口。</p>
+    </div>
+    <div class="screen-meta">
+      對應 PDF § 八 首頁重構<br>
+      <b>老師看的</b>和<b>學生看的</b>不一樣
+    </div>
+  </div>
+
+  <div class="note new"><b>設計要點：</b>老師首頁最上方是「本週待批改 / 待回覆 Q&amp;A」；學生首頁最上方是「今日要做什麼 / 有什麼逾期」。</div>
+
+  <div class="class-banner">
+    <div class="class-crest">🦊</div>
+    <div>
+      <h2>高三甲班 · 2026 春季</h2>
+      <p>班訓：穩。專注。不比速度，比持續。 · 28 成員 · 主任導師 王老師</p>
+    </div>
+    <div style="margin-left:auto;text-align:right;">
+      <div class="chip ok">學期進行中 · 第 8 週 / 18 週</div>
+    </div>
+  </div>
+
+  <!-- Role-specific top strip -->
+  <div class="card teacher-only">
+    <h3>🧑‍🏫 老師今日待辦 <span class="pill warn">需要你</span></h3>
+    <div class="card-row-3">
+      <div class="mini"><div class="k">待批改作業</div><div class="v">12</div><div class="muted">英文週考答案卷</div></div>
+      <div class="mini"><div class="k">未讀問題</div><div class="v">3</div><div class="muted">數學題本第 42 題</div></div>
+      <div class="mini"><div class="k">今日未到</div><div class="v">2</div><div class="muted">陳 O 妤、林 O 翰</div></div>
+    </div>
+    <div style="margin-top:10px;"><button class="btn primary">進入批改 →</button> <button class="btn">今日點名</button> <button class="btn">發公告</button></div>
+  </div>
+
+  <div class="card student-only">
+    <h3>👨‍🎓 你今天要做什麼 <span class="pill">3 件</span></h3>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="display:flex;align-items:center;gap:10px;padding:8px;border:1px solid var(--border);border-radius:6px;">
+        <span class="chip bad">逾期 1 天</span>
+        <span style="flex:1;">英文 Ch 5 單字默寫繳交</span>
+        <button class="btn primary small">現在繳交</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:8px;border:1px solid var(--border);border-radius:6px;">
+        <span class="chip warn">今日截止</span>
+        <span style="flex:1;">數學練習題 P.120–125</span>
+        <button class="btn small">打開</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:8px;border:1px solid var(--border);border-radius:6px;">
+        <span class="chip">明天 08:00</span>
+        <span style="flex:1;">國文週測 · 班級共同應試時間</span>
+        <button class="btn small">加行事曆</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card captain-only">
+    <h3>🎖 班長任務 <span class="pill">本週</span></h3>
+    <div class="muted">班長可代替老師做：提交全班出席狀況、統整問題、協助點名、發佈非正式公告。</div>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <button class="btn primary">提交今日出席</button>
+      <button class="btn">匯整本週提問</button>
+    </div>
+  </div>
+
+  <div class="two">
+    <div>
+      <div class="card">
+        <h3>📅 下一個考試</h3>
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div style="background:var(--warn-soft);border:1px solid #e9cfb5;border-radius:10px;padding:12px 16px;text-align:center;">
+            <div style="font-size:28px;font-weight:700;color:var(--warn);">D-12</div>
+            <div class="muted">4/23 第二次段考</div>
+          </div>
+          <div style="flex:1;">
+            <div class="muted">全班平均準備進度</div>
+            <div class="bar" style="margin:6px 0;"><span style="width:62%;"></span></div>
+            <div style="font-size:12px;">62% · 你的進度: <b>71%</b></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>📣 置頂公告</h3>
+        <div style="display:flex;gap:10px;align-items:flex-start;padding:10px;background:#fffbf0;border-radius:6px;border:1px solid #ecd9a8;">
+          <span class="chip ink">📌</span>
+          <div style="flex:1;">
+            <div style="font-weight:600;">週五段考座位表公布</div>
+            <div class="muted" style="margin-top:3px;">王老師 · 2026/4/20 · 28/28 人已讀</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;font-size:12px;">還有 2 則公告 →</div>
+      </div>
+
+      <div class="card">
+        <h3>🔥 正在專注的同學 <span class="pill">live</span></h3>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="chip ok"><span class="avatar sm">林</span> 林 O 翰 · 32 分鐘</span>
+          <span class="chip ok"><span class="avatar sm">張</span> 張 O 安 · 15 分鐘</span>
+          <span class="chip ok"><span class="avatar sm">陳</span> 陳 O 妤 · 48 分鐘</span>
+          <span class="chip">+5 人</span>
+        </div>
+        <div style="margin-top:10px;"><button class="btn ghost">🏃 加入班級共讀室 →</button></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h3>🎯 本週共同目標</h3>
+        <div style="font-size:12px;margin-bottom:4px;">全班累積專注 300 小時</div>
+        <div class="bar"><span style="width:74%;"></span></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:4px;"><span class="muted">222 / 300 hr</span><span class="chip ok">74%</span></div>
+        <div class="divider"></div>
+        <div style="font-size:12px;margin-bottom:4px;">英文單字完成率 80%</div>
+        <div class="bar"><span style="width:55%;"></span></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:4px;"><span class="muted">55%</span><span class="chip warn">落後</span></div>
+      </div>
+
+      <div class="card">
+        <h3>📚 科目入口</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+          <div class="mini">📘 英文 · 3 任務</div>
+          <div class="mini">🔢 數學 · 2 任務</div>
+          <div class="mini">🔬 自然 · 0 任務</div>
+          <div class="mini">🌏 社會 · 1 任務</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🏆 本週排行榜摘要</h3>
+        <div class="muted" style="font-size:11px;">專注時數榜</div>
+        <div style="margin-top:6px;font-size:12px;">
+          <div style="display:flex;justify-content:space-between;padding:3px 0;"><span>🥇 陳 O 妤</span><span>24.5 hr</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;"><span>🥈 林 O 翰</span><span>22.1 hr</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;"><span>🥉 你</span><span>20.8 hr</span></div>
+        </div>
+        <button class="btn ghost small">看全部 4 種榜 →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     SCREEN: TASKS (作業板)
+========================================================= -->
+<section class="screen" id="s-tasks">
+  <div class="screen-head">
+    <div><h1>作業板 <span class="muted">Task Board</span></h1><p>PDF § 六 1. 班級任務板</p></div>
+    <div class="screen-meta">老師可發派、學生可勾選</div>
+  </div>
+  <div class="note new"><b>和 PDF 比多了：</b>每個任務顯示繳交類型（文字 / 圖片 / 連結 / 檔案 / 測驗）、積分、所屬科目、所需預估時間、班級完成率 bar。</div>
+
+  <div class="card">
+    <h3>🔥 今日截止 / 逾期</h3>
+    <table class="tbl">
+      <thead><tr><th>狀態</th><th>科目</th><th>任務</th><th>繳交方式</th><th>積分</th><th>全班進度</th><th></th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip bad">逾期</span></td><td>英文</td><td>Ch 5 單字默寫繳交</td><td>✍️ 文字/圖片</td><td>10</td><td style="width:140px;"><div class="bar"><span style="width:85%;"></span></div><span class="muted">24/28</span></td><td class="teacher-only"><button class="btn small">提醒 4 人</button></td><td class="student-only"><button class="btn primary small">繳交</button></td></tr>
+        <tr><td><span class="chip warn">今日</span></td><td>數學</td><td>P.120–125 練習</td><td>📷 拍照上傳</td><td>15</td><td style="width:140px;"><div class="bar"><span style="width:46%;"></span></div><span class="muted">13/28</span></td><td class="teacher-only"><button class="btn small">看繳交</button></td><td class="student-only"><button class="btn small">打開</button></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card-row">
+    <div class="card">
+      <h3>📅 本週任務</h3>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="padding:8px;border:1px solid var(--border);border-radius:6px;"><b>國文週測</b> · 🧪 測驗 · 20 分 · 4/24 08:00 <div class="muted">28/28 報名</div></div>
+        <div style="padding:8px;border:1px solid var(--border);border-radius:6px;"><b>自然實驗報告</b> · 📄 PDF 上傳 · 30 分 · 4/26<div class="muted">8/28 已交</div></div>
+        <div style="padding:8px;border:1px solid var(--border);border-radius:6px;"><b>社會讀後心得</b> · ✍️ 文字 500 字 · 10 分 · 4/27<div class="muted">2/28 已交</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>✅ 已完成 / 本月</h3>
+      <div style="display:flex;flex-direction:column;gap:4px;font-size:12px;">
+        <div style="display:flex;justify-content:space-between;"><span>英文 Ch 4 單字</span><span class="chip ok">92 分</span></div>
+        <div style="display:flex;justify-content:space-between;"><span>數學 Ch 3 測驗</span><span class="chip ok">85 分</span></div>
+        <div style="display:flex;justify-content:space-between;"><span>自然 光學實驗</span><span class="chip ok">A+</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     SCREEN: TASK CREATE (發派作業) — teacher
+========================================================= -->
+<section class="screen" id="s-task-create">
+  <div class="screen-head">
+    <div><h1>發派作業 <span class="muted">Create Task</span></h1><p>老師 / 班長發派新任務。</p></div>
+    <div class="screen-meta">PDF 沒有畫這一頁</div>
+  </div>
+  <div class="note"><b>核心選擇：</b>「繳交類型」是新的 UX 關鍵 — 決定學生繳交頁長什麼樣、老師批改介面長什麼樣、是否能自動評分。</div>
+
+  <div class="two">
+    <div class="card">
+      <h3>任務內容</h3>
+      <div class="form-row"><label>標題</label><input value="英文 Ch 5 單字默寫"></div>
+      <div class="form-row"><label>科目</label><select><option>英文</option><option>數學</option><option>自然</option><option>社會</option><option>其他</option></select></div>
+      <div class="form-row"><label>說明</label><textarea>請默寫 Ch 5 單字表，共 40 字，拍照上傳或直接打字。</textarea></div>
+      <div class="form-row">
+        <label>繳交類型</label>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
+          <button class="btn">✍️ 文字</button>
+          <button class="btn primary">📷 圖片</button>
+          <button class="btn">📄 PDF</button>
+          <button class="btn">🔗 連結</button>
+          <button class="btn">🎤 錄音</button>
+          <button class="btn">🧪 內建測驗</button>
+        </div>
+      </div>
+      <div class="card-row">
+        <div class="form-row"><label>截止</label><input type="datetime-local" value="2026-04-24T22:00"></div>
+        <div class="form-row"><label>積分</label><input type="number" value="10"></div>
+      </div>
+      <div class="form-row"><label>開放對象</label>
+        <select><option>全班</option><option>指定成員</option><option>指定科目分組</option></select>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>⚙️ 進階選項</h3>
+        <div style="font-size:12px;display:flex;flex-direction:column;gap:8px;">
+          <label><input type="checkbox" checked> 允許遲交（遲交自動 -20%）</label>
+          <label><input type="checkbox"> 允許重交（最多 3 次）</label>
+          <label><input type="checkbox" checked> 繳交後可看全班答案（截止後）</label>
+          <label><input type="checkbox"> 啟用同儕互評（2 人一組）</label>
+          <label><input type="checkbox"> 自動從公告生成（勾這會反向連結到公告）</label>
+          <label><input type="checkbox"> 轉成考試倒數</label>
+        </div>
+      </div>
+      <div class="card">
+        <h3>📊 評分方式</h3>
+        <select><option>老師手動打分</option><option>內建 Rubric 量尺</option><option>測驗自動評分</option><option>僅標記完成</option></select>
+        <div class="muted" style="margin-top:6px;font-size:11px;">Rubric 量尺可以在 Rubric 庫管理，重複使用。</div>
+      </div>
+      <button class="btn primary" style="width:100%;padding:10px;">發布 → 通知 28 位成員</button>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     SCREEN: SUBMISSIONS DASHBOARD (繳交狀態) — teacher
+========================================================= -->
+<section class="screen" id="s-submissions">
+  <div class="screen-head">
+    <div><h1>繳交狀態總覽 <span class="muted">Submissions Dashboard</span></h1><p>老師一眼看完：誰交了、誰沒交、待批改數量。</p></div>
+    <div class="screen-meta">PDF 沒有畫 · 完全新增</div>
+  </div>
+  <div class="note new"><b>關鍵價值：</b>這頁是把班級從「展示頁」升級成「管理系統」最強的單頁。老師過去要手動點開每個任務一個個數，這裡全部攤平 + 可一鍵催繳。</div>
+
+  <div class="card">
+    <h3>選擇任務</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn primary small">英文 Ch 5 默寫 (24/28)</button>
+      <button class="btn small">數學 P.120 (13/28)</button>
+      <button class="btn small">自然實驗報告 (8/28)</button>
+      <button class="btn small">社會心得 (2/28)</button>
+    </div>
+  </div>
+
+  <div class="card-row-3">
+    <div class="mini"><div class="k">已繳交</div><div class="v" style="color:var(--ok);">24</div><div class="muted">86%</div></div>
+    <div class="mini"><div class="k">逾期未交</div><div class="v" style="color:var(--bad);">4</div><div class="muted">可一鍵催繳</div></div>
+    <div class="mini"><div class="k">待批改</div><div class="v" style="color:var(--warn);">12</div><div class="muted">批改預估 45 分</div></div>
+    <div class="mini"><div class="k">已批改</div><div class="v">12</div><div class="muted">平均 85 分</div></div>
+  </div>
+
+  <div class="card">
+    <h3>成員狀態 <span class="pill">28 人</span></h3>
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <button class="btn small">全部</button>
+      <button class="btn primary small">未繳交 (4)</button>
+      <button class="btn small">待批改 (12)</button>
+      <button class="btn small">已完成 (12)</button>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>座號</th><th>姓名</th><th>狀態</th><th>繳交時間</th><th>分數</th><th>操作</th></tr></thead>
+      <tbody>
+        <tr><td>03</td><td><span class="avatar sm">林</span> 林 O 翰</td><td><span class="chip bad">未交（逾期 1 天）</span></td><td>—</td><td>—</td><td><button class="btn small warn">📲 催繳</button></td></tr>
+        <tr><td>07</td><td><span class="avatar sm">張</span> 張 O 安</td><td><span class="chip bad">未交</span></td><td>—</td><td>—</td><td><button class="btn small warn">📲 催繳</button></td></tr>
+        <tr><td>12</td><td><span class="avatar sm">陳</span> 陳 O 妤</td><td><span class="chip warn">待批改</span></td><td>4/23 21:40</td><td>—</td><td><button class="btn primary small">批改</button></td></tr>
+        <tr><td>15</td><td><span class="avatar sm">王</span> 王 O 寧</td><td><span class="chip ok">已批改</span></td><td>4/23 19:22</td><td>92</td><td><button class="btn small">看回饋</button></td></tr>
+      </tbody>
+    </table>
+    <div style="margin-top:10px;"><button class="btn primary">📲 一鍵催繳 4 位未交者</button> <button class="btn">匯出 CSV</button></div>
+  </div>
+</section>
+
+<!-- =========================================================
+     SCREEN: GRADING (批改介面) — teacher
+========================================================= -->
+<section class="screen" id="s-grading">
+  <div class="screen-head">
+    <div><h1>批改 <span class="muted">Grading</span></h1><p>老師逐份批改繳交。</p></div>
+    <div class="screen-meta">PDF 沒有畫 · 新增</div>
+  </div>
+  <div class="note"><b>建議：</b>批改面板採「左看繳交 / 右打分」雙欄，鍵盤 <kbd>1–5</kbd> 快速打星、<kbd>Enter</kbd> 下一份、<kbd>Shift+Enter</kbd> 上一份。常用評語做成快捷 snippet。</div>
+  <div class="grade-split">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div><b>陳 O 妤 · 座號 12</b> <span class="muted">· 4/23 21:40 繳交</span></div>
+        <div><button class="btn small">← 上一份</button> <button class="btn small">下一份 →</button> <span class="muted">12 / 24</span></div>
+      </div>
+      <div class="ph" style="height:380px;">
+        📷 學生上傳的默寫照片預覽<br>
+        <span style="font-size:10px;">（可放大/旋轉/圈選錯字）</span>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>評分 <span class="pill">Rubric</span></h3>
+        <div class="rubric-row"><span>字形工整</span><span class="stars">★★★★☆</span></div>
+        <div class="rubric-row"><span>正確率</span><span class="stars">★★★★★</span></div>
+        <div class="rubric-row"><span>按時繳交</span><span class="stars">★★★★★</span></div>
+        <div class="divider"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <b>總分</b>
+          <input style="width:60px;text-align:right;" value="92">
+        </div>
+      </div>
+      <div class="card">
+        <h3>評語</h3>
+        <textarea style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;" rows="4">整體不錯，最後一頁有 3 字寫成簡體。字形再加強一下。</textarea>
+        <div class="muted" style="font-size:11px;margin-top:4px;">快捷：</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+          <button class="btn small">👍 很棒</button>
+          <button class="btn small">注意字形</button>
+          <button class="btn small">全對</button>
+          <button class="btn small">+管理自訂 snippet</button>
+        </div>
+      </div>
+      <button class="btn primary" style="width:100%;padding:10px;">送出 &amp; 下一份 (Enter)</button>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     SCREEN: ATTENDANCE (點名)
+========================================================= -->
+<section class="screen" id="s-attendance">
+  <div class="screen-head">
+    <div><h1>點名 / 出席 <span class="muted">Attendance</span></h1><p>每日 roll-call。可切「座位視圖」或「清單視圖」。</p></div>
+    <div class="screen-meta">PDF 沒有 · 新增</div>
+  </div>
+  <div class="note new"><b>設計巧思：</b>點名不只看「到/沒到」——加 <span class="chip ok" style="font-size:10px;">專注中</span> 狀態（從 YPT Focus 即時同步），老師看得出學生雖然到了但神遊。</div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div><b>2026/4/21 (週二)</b> <span class="muted">· 第 8 週</span></div>
+      <div>
+        <button class="btn small">清單視圖</button>
+        <button class="btn primary small">座位視圖</button>
+      </div>
+    </div>
+    <div class="seat-grid">
+      <div class="seat studying"><span class="avatar sm">林</span><div>林翰</div><div class="n">03 · 32min</div></div>
+      <div class="seat"><span class="avatar sm">張</span><div>張安</div><div class="n">07</div></div>
+      <div class="seat studying"><span class="avatar sm">陳</span><div>陳妤</div><div class="n">12 · 48min</div></div>
+      <div class="seat late"><span class="avatar sm">王</span><div>王寧</div><div class="n">15 · 遲 10'</div></div>
+      <div class="seat"><span class="avatar sm">李</span><div>李淇</div><div class="n">18</div></div>
+      <div class="seat absent"><span class="avatar sm">黃</span><div>黃永</div><div class="n">21 · 請假</div></div>
+      <div class="seat"><span class="avatar sm">吳</span><div>吳宣</div><div class="n">24</div></div>
+      <div class="seat"><span class="avatar sm">周</span><div>周昀</div><div class="n">27</div></div>
+      <div class="seat"><span class="avatar sm">蔡</span><div>蔡倢</div><div class="n">31</div></div>
+      <div class="seat"><span class="avatar sm">鄭</span><div>鄭軒</div><div class="n">35</div></div>
+      <div class="seat studying"><span class="avatar sm">楊</span><div>楊妍</div><div class="n">40 · 15min</div></div>
+      <div class="seat absent"><span class="avatar sm">許</span><div>許豪</div><div class="n">42 · 未到</div></div>
+    </div>
+    <div class="divider"></div>
+    <div style="display:flex;gap:10px;font-size:11px;">
+      <span><span class="chip ok">●</span> 專注中 3</span>
+      <span><span class="chip">●</span> 已到 5</span>
+      <span><span class="chip warn">●</span> 遲到 1</span>
+      <span><span class="chip bad">●</span> 未到/請假 2</span>
+    </div>
+    <div style="margin-top:10px;"><button class="btn primary">儲存今日紀錄</button> <button class="btn">匯出月報</button></div>
+  </div>
+</section>
+
+<!-- =========================================================
+     SCREEN: MEMBERS / ROLES (成員 / 角色)
+========================================================= -->
+<section class="screen" id="s-members">
+  <div class="screen-head">
+    <div><h1>成員 / 角色 <span class="muted">Members & Roles</span></h1><p>管理誰是老師 / 班長 / 科目代表 / 一般學生。</p></div>
+    <div class="screen-meta">PDF § 優先級 P2 · 我把它提前到 P1</div>
+  </div>
+  <div class="note"><b>為什麼要拆細角色：</b>班長能發公告但不能打分；科目代表能整理該科錯題本但不能發別科作業。細粒度權限減少「誰都能亂改」的混亂。</div>
+  <div class="card">
+    <h3>預設角色模板</h3>
+    <div class="card-row-3">
+      <div class="mini"><b>🧑‍🏫 老師 / 導師</b><div class="muted">全權限</div></div>
+      <div class="mini"><b>🎖 班長</b><div class="muted">發公告 / 點名 / 催繳</div></div>
+      <div class="mini"><b>📚 科代</b><div class="muted">該科作業 / 資源 / 錯題本</div></div>
+      <div class="mini"><b>👨‍🎓 一般學生</b><div class="muted">繳交 / 發問 / 互評</div></div>
+      <div class="mini"><b>👁 家長 / 觀察員</b><div class="muted">唯讀</div></div>
+      <div class="mini"><b>➕ 自訂角色</b><div class="muted">勾選權限組合</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>成員列表</h3>
+    <table class="tbl">
+      <thead><tr><th>座號</th><th>姓名</th><th>角色</th><th>加入日</th><th>本週專注</th><th></th></tr></thead>
+      <tbody>
+        <tr><td>—</td><td><span class="avatar sm">王</span> 王老師</td><td><span class="chip ink">🧑‍🏫 老師</span></td><td>2026/2/1</td><td>—</td><td><button class="btn small">檢視</button></td></tr>
+        <tr><td>01</td><td><span class="avatar sm">陳</span> 陳 O 妤</td><td><span class="chip warn">🎖 班長</span> <span class="chip">📚 英文科代</span></td><td>2026/2/5</td><td>24.5 hr</td><td><button class="btn small">調整角色</button></td></tr>
+        <tr><td>03</td><td><span class="avatar sm">林</span> 林 O 翰</td><td><span class="chip">👨‍🎓 學生</span></td><td>2026/2/5</td><td>22.1 hr</td><td><button class="btn small">調整角色</button></td></tr>
+        <tr><td>—</td><td><span class="avatar sm">父</span> 林爸爸</td><td><span class="chip">👁 家長（林翰的）</span></td><td>2026/2/10</td><td>—</td><td><button class="btn small">移除</button></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- =========================================================
+     SCREEN: SUBMIT (學生繳交)
+========================================================= -->
+<section class="screen" id="s-submit">
+  <div class="screen-head">
+    <div><h1>繳交作業 <span class="muted">Submit</span></h1><p>學生繳交介面。UI 隨繳交類型變動。</p></div>
+    <div class="screen-meta">PDF 沒有 · 新增</div>
+  </div>
+  <div class="note new"><b>學習閉環的關鍵：</b>有「繳交」才能閉上「老師發作業 → 學生交 → 老師回饋」這個學習循環。現在 v23 只有「標記完成」，等於沒交。</div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div><b>英文 Ch 5 單字默寫</b><div class="muted">王老師發佈 · 截止 4/24 22:00 · 目前：<span class="chip warn">剩 6 小時</span></div></div>
+      <div class="chip">10 分 · 📷 圖片</div>
+    </div>
+    <div class="divider"></div>
+    <div class="form-row">
+      <label>上傳照片（最多 5 張）</label>
+      <div class="ph">點此或拖曳圖片到這裡<br><span style="font-size:10px;">建議直拍 A4，系統會自動裁切 / 轉正</span></div>
+    </div>
+    <div class="form-row"><label>留言給老師（可選）</label><textarea rows="2" placeholder="想補充什麼..."></textarea></div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn primary">送出繳交</button>
+      <button class="btn">先存草稿</button>
+      <span class="muted" style="font-size:11px;margin-left:auto;">送出後可在截止前重交（最多 3 次）</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>👀 截止後才能看</h3>
+    <div class="muted" style="font-size:12px;">· 全班答案瀏覽（匿名 or 具名由老師設定）<br>· 老師公布的「範例答案」<br>· 全班平均分數、你的排名百分位<br>· 常錯字彙 heatmap</div>
+  </div>
+</section>
+
+<!-- =========================================================
+     SCREEN: HISTORY (我的繳交歷史)
+========================================================= -->
+<section class="screen" id="s-history">
+  <div class="screen-head">
+    <div><h1>我的繳交歷史 <span class="muted">Submission History</span></h1><p>學生端的「學習成果回看」。</p></div>
+    <div class="screen-meta">新增</div>
+  </div>
+  <div class="note new"><b>為什麼重要：</b>學生需要能回看自己這學期交了什麼、拿幾分、老師怎麼評的。這是「作品集」級別的存在感，而不是單次交完就消失。</div>
+  <div class="card-row-3">
+    <div class="mini"><div class="k">本學期已交</div><div class="v">14</div><div class="muted">/ 16 發佈</div></div>
+    <div class="mini"><div class="k">平均分</div><div class="v">87.3</div><div class="muted">班排 #3</div></div>
+    <div class="mini"><div class="k">逾期次數</div><div class="v">1</div><div class="muted">-2% 扣分</div></div>
+  </div>
+  <div class="card">
+    <h3>繳交記錄</h3>
+    <table class="tbl">
+      <thead><tr><th>日期</th><th>任務</th><th>科目</th><th>類型</th><th>分數</th><th>老師評語</th></tr></thead>
+      <tbody>
+        <tr><td>4/23</td><td>英文 Ch 5 默寫</td><td>英文</td><td>📷</td><td><span class="chip ok">92</span></td><td>字形再加強一下。</td></tr>
+        <tr><td>4/18</td><td>數學 Ch 3 測驗</td><td>數學</td><td>🧪</td><td><span class="chip ok">85</span></td><td>第 12 題觀念重讀。</td></tr>
+        <tr><td>4/14</td><td>自然 光學實驗報告</td><td>自然</td><td>📄</td><td><span class="chip ok">A+</span></td><td>優秀，圖表清晰。</td></tr>
+        <tr><td>4/10</td><td>社會 公民議題心得</td><td>社會</td><td>✍️</td><td><span class="chip warn">78</span></td><td>論點支撐再豐富。</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h3>📈 進步趨勢</h3>
+    <div class="ph" style="height:120px;">折線圖 · 各科分數隨時間變化</div>
+  </div>
+</section>
+
+<!-- =========================================================
+     SCREEN: PEER REVIEW (同儕互評)
+========================================================= -->
+<section class="screen" id="s-peer">
+  <div class="screen-head">
+    <div><h1>同儕互評 <span class="muted">Peer Review</span></h1><p>匿名讀兩份同學作業、給回饋。</p></div>
+    <div class="screen-meta">新增</div>
+  </div>
+  <div class="note"><b>設計細節：</b>互評預設匿名（只看內容不看名字），老師可看到誰給誰評了什麼。學生讀兩份才能解鎖自己的回饋（避免白嫖）。</div>
+  <div class="card">
+    <h3>我要評的作業 (2/2)</h3>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="padding:10px;border:1px solid var(--border);border-radius:6px;">
+        <div><b>匿名同學 A</b> <span class="muted">· 社會心得</span></div>
+        <div class="ph" style="height:60px;margin:8px 0;">[學生作品預覽]</div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span class="muted" style="font-size:11px;">我的評分：</span>
+          <span class="stars">★★★★☆</span>
+          <button class="btn small">寫 100 字評語 →</button>
+        </div>
+      </div>
+      <div style="padding:10px;border:1px solid var(--border);border-radius:6px;opacity:.6;">
+        <div><b>匿名同學 B</b> <span class="muted">· 社會心得 · 待讀</span></div>
+        <button class="btn small">開始讀</button>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>我收到的回饋</h3>
+    <div class="muted" style="font-size:12px;margin-bottom:8px;">🔒 你需要讀完 2 份才能看</div>
+    <div class="ph">解鎖中 · 1/2</div>
+  </div>
+</section>
+
+<!-- =========================================================
+     SCREEN: Q&A (問答區)
+========================================================= -->
+<section class="screen" id="s-qa">
+  <div class="screen-head">
+    <div><h1>問答區 <span class="muted">Q&amp;A</span></h1><p>針對某個任務 / 科目的提問討論。</p></div>
+    <div class="screen-meta">擴充 PDF 既有聊天</div>
+  </div>
+  <div class="note"><b>和群組聊天的差別：</b>Q&amp;A 有結構（每條是一個「問題」，可標記「老師已回」、可分類、可搜尋），聊天是線性流水。兩者並存。</div>
+  <div class="card">
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <button class="btn small primary">全部</button>
+      <button class="btn small">待老師回 (3)</button>
+      <button class="btn small">我的</button>
+      <button class="btn small">已解答</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="padding:10px;border:1px solid var(--border);border-radius:6px;">
+        <div style="display:flex;justify-content:space-between;"><b>數學 P.123 第 5 題的解法卡住</b><span class="chip warn">待老師回</span></div>
+        <div class="muted" style="font-size:11px;">林 O 翰 · 2 小時前 · 💬 5 則同學回覆</div>
+        <div style="margin-top:6px;font-size:12px;">...我試著用平方差公式但答案對不到，附上我的演算過程→</div>
+      </div>
+      <div style="padding:10px;border:1px solid var(--border);border-radius:6px;">
+        <div style="display:flex;justify-content:space-between;"><b>Ch 5 第 28 個單字發音怎麼拼？</b><span class="chip ok">老師已回 ✓</span></div>
+        <div class="muted" style="font-size:11px;">陳 O 妤 · 昨天</div>
+      </div>
+    </div>
+    <button class="btn primary" style="margin-top:10px;">+ 發問</button>
+  </div>
+</section>
+
+<!-- =========================================================
+     SCREEN: CALENDAR (班級行事曆)
+========================================================= -->
+<section class="screen" id="s-calendar">
+  <div class="screen-head">
+    <div><h1>班級行事曆 <span class="muted">Class Calendar</span></h1><p>考試 / 作業截止 / 班級活動 一個時間軸。</p></div>
+    <div class="screen-meta">PDF 沒有 · 新增</div>
+  </div>
+  <div class="note new"><b>整合：</b>這頁把考試倒數、作業截止、班級活動、甚至「班級共讀時段」都放在同一個月曆。可匯出 Google / Apple Calendar。</div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div><button class="btn small">←</button> <b>2026 年 4 月</b> <button class="btn small">→</button></div>
+      <div style="font-size:11px;"><span class="chip warn">● 考試</span> <span class="chip ok">● 作業</span> <span class="chip">● 活動</span></div>
+    </div>
+    <div class="cal-head"><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div><div>日</div></div>
+    <div class="cal">
+      <div class="day"><span class="n">1</span></div>
+      <div class="day"><span class="n">2</span></div>
+      <div class="day has-task"><span class="n">3</span><div class="d">英文 Ch4</div></div>
+      <div class="day"><span class="n">4</span></div>
+      <div class="day"><span class="n">5</span></div>
+      <div class="day"><span class="n">6</span></div>
+      <div class="day"><span class="n">7</span></div>
+      <div class="day"><span class="n">8</span></div>
+      <div class="day has-task"><span class="n">9</span><div class="d">數學測驗</div></div>
+      <div class="day"><span class="n">10</span></div>
+      <div class="day"><span class="n">11</span></div>
+      <div class="day"><span class="n">12</span></div>
+      <div class="day"><span class="n">13</span></div>
+      <div class="day"><span class="n">14</span></div>
+      <div class="day"><span class="n">15</span></div>
+      <div class="day"><span class="n">16</span></div>
+      <div class="day"><span class="n">17</span></div>
+      <div class="day"><span class="n">18</span></div>
+      <div class="day"><span class="n">19</span></div>
+      <div class="day"><span class="n">20</span></div>
+      <div class="day today"><span class="n">21 ·今</span></div>
+      <div class="day"><span class="n">22</span></div>
+      <div class="day has-task"><span class="n">23</span><div class="d">英文默寫</div></div>
+      <div class="day has-task"><span class="n">24</span><div class="d">國文週測</div></div>
+      <div class="day has-task"><span class="n">25</span><div class="d">自然實驗</div></div>
+      <div class="day"><span class="n">26</span></div>
+      <div class="day has-exam"><span class="n">27</span><div class="d">🔥 第二段考</div></div>
+      <div class="day has-exam"><span class="n">28</span><div class="d">🔥 第二段考</div></div>
+      <div class="day has-exam"><span class="n">29</span><div class="d">🔥 第二段考</div></div>
+      <div class="day"><span class="n">30</span></div>
+    </div>
+    <div style="margin-top:10px;"><button class="btn">匯出 .ics</button> <button class="btn">訂閱到 Google Calendar</button></div>
+  </div>
+</section>
+
+<!-- =========================================================
+     SCREEN: SEATS (座號 / 花名冊)
+========================================================= -->
+<section class="screen" id="s-seats">
+  <div class="screen-head">
+    <div><h1>座號 / 花名冊 <span class="muted">Seating Chart &amp; Roster</span></h1><p>班級身份感的核心。有固定座號才像「一個班」。</p></div>
+    <div class="screen-meta">PDF 沒有 · 新增</div>
+  </div>
+  <div class="note"><b>為什麼重要：</b>YPT++ 學習小組 = 動機、班級 = 結構。結構的最小單位就是每人有座號、有角色、有本命位置。沒有座號的班級永遠感覺像群組。</div>
+  <div class="two">
+    <div class="card">
+      <h3>座位表</h3>
+      <div class="muted" style="font-size:11px;">上方=黑板方向 · 拖曳可重排（老師權限）</div>
+      <div class="seat-grid" style="margin-top:10px;">
+        <div class="seat"><div>林翰</div><div class="n">03</div></div>
+        <div class="seat"><div>張安</div><div class="n">07</div></div>
+        <div class="seat"><div>陳妤</div><div class="n">12</div></div>
+        <div class="seat"><div>王寧</div><div class="n">15</div></div>
+        <div class="seat"><div>李淇</div><div class="n">18</div></div>
+        <div class="seat"><div>黃永</div><div class="n">21</div></div>
+        <div class="seat"><div>吳宣</div><div class="n">24</div></div>
+        <div class="seat"><div>周昀</div><div class="n">27</div></div>
+        <div class="seat"><div>蔡倢</div><div class="n">31</div></div>
+        <div class="seat"><div>鄭軒</div><div class="n">35</div></div>
+        <div class="seat"><div>楊妍</div><div class="n">40</div></div>
+        <div class="seat"><div>許豪</div><div class="n">42</div></div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>花名冊 CSV 匯入</h3>
+        <div class="muted" style="font-size:12px;">老師可以一次匯入整班，自動分配座號。欄位：姓名 / 座號 / 角色 / 家長 email。</div>
+        <button class="btn small" style="margin-top:8px;">下載範本</button>
+      </div>
+      <div class="card">
+        <h3>今日班級自我介紹</h3>
+        <div class="muted" style="font-size:11px;">每位成員有自己的「班級卡片」：座號 + 自介 + 目標大學 + 擅長科目</div>
+        <button class="btn small">檢視我的班級卡片</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     SCREEN: CO-EDIT (共筆)
+========================================================= -->
+<section class="screen" id="s-coedit">
+  <div class="screen-head">
+    <div><h1>共筆協作 <span class="muted">Co-Editing</span></h1><p>一份全班一起編的筆記 / 考古整理。</p></div>
+    <div class="screen-meta">擴充自 PDF § 班級資源區</div>
+  </div>
+  <div class="note"><b>設計邊界：</b>不做成 Notion。就是一份輕量 Markdown 協作頁、有 presence indicator「誰在編輯」、有章節鎖（某人編輯中，其他人只讀）、整合到每人自己的 Learn > Notes 可一鍵收藏。</div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <b>高三英文 Ch5 單字共筆</b>
+      <div style="font-size:11px;">👥 <span class="chip ok">陳妤編輯中</span> <span class="chip">林翰</span> <span class="chip">張安</span> +3</div>
+    </div>
+    <div class="ph" style="min-height:280px;text-align:left;padding:16px;font-family:monospace;font-size:12px;">
+# Chapter 5 Vocabulary<br>
+<br>
+## 動詞類 <span style="background:#fff3c4;">← 陳妤正在編輯</span><br>
+- analyze — 分析<br>
+- criticize — 批評<br>
+<br>
+## 名詞類<br>
+- perspective — 觀點<br>
+...
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px;"><button class="btn primary small">⭐ 收藏到我的 Notes</button><button class="btn small">版本紀錄</button><button class="btn small">鎖定章節</button></div>
+  </div>
+</section>
+
+<!-- =========================================================
+     SCREEN: RESOURCES (資源中心)
+========================================================= -->
+<section class="screen" id="s-resources">
+  <div class="screen-head">
+    <div><h1>資源中心 <span class="muted">Resource Hub</span></h1><p>講義 / 連結 / 考古 / 常錯題。</p></div>
+    <div class="screen-meta">PDF § 六 5</div>
+  </div>
+  <div class="note"><b>補充 PDF 沒寫清楚的：</b>資源要分「老師官方」「班長整理」「同學共享」三層，避免資訊品質不一。老師可把學生分享的東西一鍵升級為官方。</div>
+  <div class="card">
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <button class="btn small primary">全部</button>
+      <button class="btn small">🧑‍🏫 老師官方 (24)</button>
+      <button class="btn small">🎖 班長整理 (12)</button>
+      <button class="btn small">👨‍🎓 同學共享 (38)</button>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>類型</th><th>標題</th><th>科目</th><th>上傳者</th><th>下載</th></tr></thead>
+      <tbody>
+        <tr><td>📄 PDF</td><td>Ch 5 重點整理.pdf</td><td>英文</td><td>王老師 🧑‍🏫</td><td>28</td></tr>
+        <tr><td>🔗 連結</td><td>109 指考英文考古</td><td>英文</td><td>陳妤 🎖</td><td>15</td></tr>
+        <tr><td>📷 圖</td><td>數學公式速記</td><td>數學</td><td>林翰 👨‍🎓</td><td>9</td></tr>
+      </tbody>
+    </table>
+    <div style="margin-top:10px;"><button class="btn primary">+ 上傳資源</button></div>
+  </div>
+</section>
+
+<!-- =========================================================
+     SCREEN: JOIN (加入班級)
+========================================================= -->
+<section class="screen" id="s-join">
+  <div class="screen-head">
+    <div><h1>加入班級 <span class="muted">Join Class</span></h1><p>學生第一次進班的流程。</p></div>
+    <div class="screen-meta">PDF 沒有 · 新增</div>
+  </div>
+  <div class="note new"><b>設計重點：</b>三種加入方式並存。班級代碼 = 最簡單（8 位英數）；邀請連結 = 有 QR code；老師手動加 = 對正式補習班情境。未成年需家長同意。</div>
+  <div class="card-row">
+    <div class="card">
+      <h3>🔑 班級代碼</h3>
+      <input style="width:100%;padding:12px;font-size:18px;text-align:center;letter-spacing:.3em;border:2px solid var(--accent);border-radius:8px;" placeholder="8 位代碼" value="HS3A-2026">
+      <button class="btn primary" style="width:100%;margin-top:8px;">加入</button>
+    </div>
+    <div class="card">
+      <h3>📱 QR Code</h3>
+      <div class="ph" style="aspect-ratio:1;">[QR code]<br>掃一下加入</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>⏳ 等待老師審核</h3>
+    <div class="muted">班級設定為「需審核」時，你送出加入請求，老師在「成員管理 → 待審」看到。</div>
+  </div>
+  <div class="card">
+    <h3>👁 未滿 18 歲？</h3>
+    <div class="muted" style="font-size:12px;">系統會要求你填家長 email，寄同意信 → 家長點連結後你才能正式加入班級。這是遵守個資法／COPPA 相關的安全保護。</div>
+  </div>
+</section>
+
+<!-- =========================================================
+     SCREEN: SETTINGS (班級設定)
+========================================================= -->
+<section class="screen" id="s-settings">
+  <div class="screen-head">
+    <div><h1>班級設定 <span class="muted">Class Settings</span></h1><p>老師 / 建立者管理面板。</p></div>
+    <div class="screen-meta">PDF 沒有 · 新增</div>
+  </div>
+  <div class="two">
+    <div class="card">
+      <h3>🎨 班級身份</h3>
+      <div class="form-row"><label>班級名稱</label><input value="高三甲班"></div>
+      <div class="form-row"><label>副標 / 班訓</label><input value="穩。專注。不比速度，比持續。"></div>
+      <div class="form-row"><label>班徽</label><div style="display:flex;gap:6px;flex-wrap:wrap;">🦊 🐻 🐼 🐨 🐯 🦁 🌸 📘 ✏️ ⭐ <button class="btn small">上傳</button></div></div>
+      <div class="form-row"><label>班級主色</label><input type="color" value="#4a7c74"></div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>🔑 加入方式</h3>
+        <div class="form-row"><label><input type="radio" checked> 班級代碼（任何知道代碼的人可加）</label></div>
+        <div class="form-row"><label><input type="radio"> 代碼 + 老師審核</label></div>
+        <div class="form-row"><label><input type="radio"> 僅老師手動加</label></div>
+      </div>
+      <div class="card">
+        <h3>📆 學期</h3>
+        <div class="form-row"><label>學期</label><input value="2026 春季"></div>
+        <div class="form-row"><label>開始 → 結束</label><input value="2026/02/01 → 2026/06/30"></div>
+      </div>
+      <div class="card">
+        <h3>⚠️ 危險區域</h3>
+        <button class="btn">📦 歸檔此班級（學期結束）</button>
+        <button class="btn warn" style="margin-top:6px;">🗑 永久刪除</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     SCREEN: ARCHIVE (歷史班級)
+========================================================= -->
+<section class="screen" id="s-archive">
+  <div class="screen-head">
+    <div><h1>歷史班級 <span class="muted">Archived Classes</span></h1><p>學期結束後封存的班級。</p></div>
+    <div class="screen-meta">PDF 沒有 · 新增</div>
+  </div>
+  <div class="note new"><b>為什麼要封存：</b>學期結束不該直接消失，否則學生無法回看過去作品。封存 = 凍結資料（不能再發任務／聊天）但所有繳交歷史、共筆、資源都保留。可 PDF 匯出「學期總覽」。</div>
+  <div class="card">
+    <table class="tbl">
+      <thead><tr><th>班級</th><th>學期</th><th>成員</th><th>總交件</th><th>平均分</th><th></th></tr></thead>
+      <tbody>
+        <tr><td>🦊 高三甲班</td><td>2025 秋</td><td>28</td><td>384</td><td>84.2</td><td><button class="btn small">進入（唯讀）</button> <button class="btn small">匯出 PDF</button></td></tr>
+        <tr><td>📘 高二乙班</td><td>2025 春</td><td>30</td><td>412</td><td>81.5</td><td><button class="btn small">進入</button></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- =========================================================
+     SCREEN: ANNOUNCE (公告中心)
+========================================================= -->
+<section class="screen" id="s-announce">
+  <div class="screen-head">
+    <div><h1>公告中心 <span class="muted">Announcements</span></h1><p>PDF § 六 2 · 這頁保留 PDF 的設計，僅補 UI。</p></div>
+    <div class="screen-meta">對應 PDF</div>
+  </div>
+  <div class="card">
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <button class="btn small primary">全部</button>
+      <button class="btn small">📌 置頂 (2)</button>
+      <button class="btn small">🔥 考試</button>
+      <button class="btn small">📝 作業</button>
+      <button class="btn small">🎉 活動</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="padding:10px;border:1px solid var(--border);border-radius:6px;">
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;"><span class="chip ink">📌</span><span class="chip warn">🔥 考試</span><b>週五段考座位表</b></div>
+        <div class="muted" style="font-size:11px;">王老師 · 4/20 · 28/28 已讀 · 🗓 截止 4/24</div>
+        <div style="margin-top:6px;display:flex;gap:6px;"><button class="btn small">一鍵轉任務</button><button class="btn small">標記已讀</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="legend">
+  <b>圖例：</b>
+  <span class="lg-role">🧑‍🏫 老師</span>
+  <span class="lg-role" style="background:var(--warn-soft);color:var(--warn);">🎖 班長</span>
+  <span class="lg-role" style="background:#f0ebe0;color:var(--muted);">👨‍🎓 學生</span>
+  <span class="tag" style="margin-left:16px;">new</span> = PDF 沒寫、我新增建議
+  · 切換「老師/學生/班長」看同一頁在不同角色下長什麼樣
+</div>
+
+</main>
+</div>
+
+<script>
+  // Role switcher
+  const roleSwitch = document.getElementById('roleSwitch');
+  const body = document.body;
+  const applyRole = (role) => {
+    body.classList.remove('role-teacher','role-student','role-captain');
+    body.classList.add('role-' + role);
+    // Show/hide role-specific cards
+    document.querySelectorAll('.teacher-only').forEach(n => n.style.display = role==='teacher' ? '' : 'none');
+    document.querySelectorAll('.student-only').forEach(n => n.style.display = role==='student' ? '' : 'none');
+    document.querySelectorAll('.captain-only').forEach(n => n.style.display = role==='captain' ? '' : 'none');
+    // Show/hide sidebar items by role
+    document.querySelectorAll('aside a[data-roles]').forEach(a => {
+      const roles = (a.getAttribute('data-roles') || '').split(',');
+      a.classList.toggle('role-hidden', !roles.includes(role));
+    });
+  };
+  roleSwitch.addEventListener('click', e => {
+    const btn = e.target.closest('button[data-role]');
+    if (!btn) return;
+    roleSwitch.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyRole(btn.getAttribute('data-role'));
+  });
+
+  // Screen navigator
+  document.querySelectorAll('aside a[data-screen]').forEach(a => {
+    a.addEventListener('click', () => {
+      const id = 's-' + a.getAttribute('data-screen');
+      document.querySelectorAll('aside a').forEach(x => x.classList.remove('active'));
+      a.classList.add('active');
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      const target = document.getElementById(id);
+      if (target) {
+        target.classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+  });
+
+  applyRole('teacher');
+</script>
+
+</body>
+</html>

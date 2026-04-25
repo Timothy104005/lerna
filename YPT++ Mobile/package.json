@@ -1,0 +1,30 @@
+{
+  "name": "ypt-plus-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Capacitor + PWA packaging shell for YPT++ v22.",
+  "scripts": {
+    "prepare:branding": "python ./scripts/generate_branding.py",
+    "prepare:web": "node ./scripts/prepare-web.js",
+    "sync": "npm run prepare:web && npx cap sync",
+    "ios": "npx cap open ios",
+    "android": "npx cap open android",
+    "assets": "npx capacitor-assets generate --iconBackgroundColor=#faf9f6 --splashBackgroundColor=#faf9f6",
+    "build:ios": "npm run prepare:web && npx cap sync ios",
+    "build:android": "npm run prepare:web && npx cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.3.0",
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/core": "^8.3.0",
+    "@capacitor/haptics": "^8.0.1",
+    "@capacitor/ios": "^8.3.0",
+    "@capacitor/preferences": "^8.0.1",
+    "@capacitor/splash-screen": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.3.0"
+  }
+}

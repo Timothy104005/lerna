@@ -1,0 +1,9 @@
+node_modules/
+android/.gradle/
+android/app/build/
+android/local.properties
+ios/App/build/
+*.jks
+*.keystore
+keystore.properties
+npm-debug.log*

@@ -1,0 +1,1632 @@
+:root {
+  --lerna-brand: #6f9f92;
+  --lerna-brand-strong: #4a7c74;
+  --lerna-ink: #13221f;
+  --lerna-paper: #f5f3ef;
+  --lerna-line: #e5e2dc;
+  --lerna-safe-top: env(safe-area-inset-top, 0px);
+  --lerna-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --lerna-mobile-topbar-height: 64px;
+  --lerna-mobile-bottomnav-height: 74px;
+  --lerna-mobile-top-offset: calc(
+    var(--lerna-mobile-topbar-height) + var(--lerna-safe-top)
+  );
+  --lerna-mobile-bottom-offset: calc(
+    var(--lerna-mobile-bottomnav-height) + var(--lerna-safe-bottom)
+  );
+}
+
+.safe-area-inset-bottom {
+  padding-bottom: max(10px, var(--lerna-safe-bottom));
+}
+
+.lerna-app-shell {
+  background:
+    radial-gradient(circle at top, rgba(111, 159, 146, 0.08), transparent 32%),
+    var(--lerna-paper);
+}
+
+.lerna-main {
+  min-width: 0;
+}
+
+.lerna-main-inner {
+  width: min(100%, 960px);
+  margin: 0 auto;
+  padding: 28px 18px 32px;
+}
+
+.lerna-brand-lockup,
+.lerna-desktop-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.lerna-brand-copy {
+  min-width: 0;
+}
+
+.lerna-brand-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  color: #111827;
+}
+
+.lerna-brand-tag {
+  margin: 4px 0 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8b948f;
+}
+
+.lerna-brand-mark {
+  display: block;
+  width: 32px;
+  height: auto;
+  max-height: 32px;
+  flex-shrink: 0;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  object-position: center;
+}
+
+.lerna-brand-mark--hero {
+  width: 72px;
+  max-height: 72px;
+}
+
+.lerna-auth-brand {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-size: 42px;
+  font-weight: 700;
+  line-height: 1;
+  color: #111827;
+  letter-spacing: -0.04em;
+}
+
+.lerna-mobile-topbar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 35;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: calc(10px + var(--lerna-safe-top)) 16px 12px;
+  border-bottom: 1px solid rgba(229, 226, 220, 0.96);
+  background: rgba(245, 243, 239, 0.94);
+  backdrop-filter: blur(18px);
+}
+
+.lerna-mobile-topbar-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.lerna-mobile-topbar-context {
+  min-width: 0;
+}
+
+.lerna-mobile-topbar-label {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8b948f;
+}
+
+.lerna-mobile-topbar-title {
+  margin: 3px 0 0;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--lerna-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lerna-mobile-topbar-action {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d7ddd6;
+  border-radius: 16px;
+  background: #ffffff;
+  color: var(--lerna-brand-strong);
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.lerna-mobile-bottomnav {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 30;
+  display: flex;
+  border-top: 1px solid rgba(229, 226, 220, 0.96);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(16px);
+  padding-bottom: max(10px, var(--lerna-safe-bottom));
+}
+
+.lerna-mobile-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(15, 23, 42, 0.28);
+}
+
+.lerna-mobile-sheet {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 41;
+  padding: 0 16px calc(16px + var(--lerna-safe-bottom));
+}
+
+.lerna-mobile-sheet-panel {
+  border: 1px solid var(--lerna-line);
+  border-radius: 26px 26px 22px 22px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfaf7 100%);
+  box-shadow: 0 -20px 44px rgba(15, 23, 42, 0.18);
+  padding: 16px;
+}
+
+.lerna-mobile-sheet-grabber {
+  width: 42px;
+  height: 4px;
+  border-radius: 999px;
+  background: #d9d5ce;
+  margin: 0 auto 14px;
+}
+
+.lerna-mobile-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.lerna-mobile-sheet-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.lerna-mobile-sheet-copy {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.lerna-mobile-sheet-close {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ddd6ca;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #6b7280;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.lerna-mobile-sheet-list {
+  display: grid;
+  gap: 10px;
+}
+
+.lerna-mobile-sheet-link {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #ece7df;
+  border-radius: 18px;
+  background: #fcfbf8;
+  color: #475569;
+  text-align: left;
+  padding: 14px;
+  transition:
+    border-color 120ms ease,
+    color 120ms ease,
+    background-color 120ms ease,
+    transform 120ms ease;
+}
+
+.lerna-mobile-sheet-link:hover,
+.lerna-mobile-sheet-link.is-active {
+  border-color: #8aaea8;
+  background: #eef6f4;
+  color: #356860;
+  transform: translateY(-1px);
+}
+
+.lerna-mobile-sheet-icon {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: #eff6f4;
+  color: #356860;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.lerna-mobile-sheet-link-copy {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.lerna-root-splash {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top, rgba(111, 159, 146, 0.12), transparent 34%),
+    var(--lerna-paper);
+}
+
+.lerna-root-splash-card {
+  width: min(100%, 320px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 28px 24px;
+  border: 1px solid rgba(229, 226, 220, 0.9);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 20px 42px rgba(15, 23, 42, 0.08);
+  text-align: center;
+}
+
+.lerna-root-splash-name {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.03em;
+}
+
+.lerna-root-splash-copy {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Quiet gamification surfaces - compact, calm, and aligned with the
+   existing paper/card language. */
+.lerna-goals-panel,
+.lerna-mastery-card,
+.lerna-milestone-log,
+.lerna-group-progress {
+  border: 1px solid rgba(229, 226, 220, 0.95);
+  border-radius: 22px;
+  background: linear-gradient(180deg, #ffffff 0%, #faf8f4 100%);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.04);
+}
+
+.lerna-goals-panel,
+.lerna-mastery-card,
+.lerna-milestone-log,
+.lerna-progress-preview {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.lerna-goals-panel {
+  align-content: start;
+}
+
+.lerna-goal-chip,
+.lerna-mastery-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-height: 28px;
+  padding: 5px 10px;
+  border: 1px solid #d9e2dd;
+  border-radius: 999px;
+  background: #f3f7f5;
+  color: #355c56;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.lerna-goal-chip {
+  white-space: normal;
+}
+
+.lerna-mastery-chip {
+  border-color: #e0e6e1;
+  background: #f7f8f6;
+  color: #5d6d69;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.lerna-mastery-card {
+  gap: 12px;
+}
+
+.lerna-progress-preview.lerna-progress-preview {
+  max-width: 28rem;
+  border: 1px solid #dfe8e2;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+}
+
+.lerna-milestone-log {
+  color: #5f6a61;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.lerna-panel-page.lerna-panel-page {
+  max-width: 760px;
+}
+
+.lerna-progress-page.lerna-progress-page {
+  max-width: 920px;
+}
+
+.lerna-progress-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.lerna-progress-layout {
+  display: grid;
+  gap: 12px;
+}
+
+.lerna-progress-card {
+  border: 1px solid #e5e2dc;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #ffffff 0%, #faf8f4 100%);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.04);
+  padding: 18px;
+}
+
+.lerna-progress-milestones {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.lerna-deck-detail {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.lerna-deck-toolbar {
+  padding: 14px 16px;
+}
+
+.lerna-deck-toolbar-meta {
+  justify-content: space-between;
+}
+
+.lerna-card-pronounce,
+.lerna-study-pronounce {
+  margin-bottom: 12px;
+}
+
+.lerna-card-face-text,
+.lerna-study-card-text,
+.lerna-study-answer-text {
+  line-height: 1.6;
+  text-wrap: balance;
+  word-break: break-word;
+}
+
+.lerna-deck-card-surface,
+.lerna-study-card-surface {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.lerna-study-shell {
+  max-width: min(100%, 840px);
+}
+
+.lerna-study-card.lerna-study-card {
+  max-width: 40rem;
+  min-height: 21rem;
+  padding: 40px 36px;
+}
+
+.lerna-study-card-text {
+  font-size: clamp(1rem, 0.55vw + 0.95rem, 1.35rem);
+}
+
+.lerna-study-answer-text {
+  font-size: clamp(0.95rem, 0.4vw + 0.92rem, 1.15rem);
+}
+
+.lerna-group-progress {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.lerna-progress-meter {
+  --lerna-progress: 0%;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 8px;
+  border: 1px solid rgba(216, 210, 200, 0.95);
+  border-radius: 999px;
+  background: #ebe6df;
+}
+
+.lerna-progress-meter::before {
+  content: "";
+  display: block;
+  height: 100%;
+  width: var(--lerna-progress);
+  border-radius: inherit;
+  background: linear-gradient(90deg, #7da99d 0%, #4a7c74 100%);
+}
+
+.lerna-progress-meter > .lerna-progress-meter-fill,
+.lerna-progress-meter > [data-lerna-progress-fill] {
+  display: block;
+  height: 100%;
+  width: var(--lerna-progress);
+  border-radius: inherit;
+  background: linear-gradient(90deg, #7da99d 0%, #4a7c74 100%);
+}
+
+@media (min-width: 768px) {
+  .lerna-goals-panel,
+  .lerna-mastery-card,
+  .lerna-milestone-log,
+  .lerna-group-progress,
+  .lerna-progress-preview {
+    border-radius: 24px;
+    padding: 16px 18px;
+  }
+
+  .lerna-goals-panel,
+  .lerna-mastery-card,
+  .lerna-milestone-log {
+    gap: 12px;
+  }
+
+  .lerna-goal-chip,
+  .lerna-mastery-chip {
+    min-height: 30px;
+    padding: 6px 11px;
+  }
+
+  .lerna-progress-meter {
+    height: 10px;
+  }
+}
+
+.ypt-tools-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ypt-tool-home-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ypt-tool-card {
+  border: 1px solid #e5e2dc;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfaf7 100%);
+  padding: 18px;
+  text-align: left;
+  transition:
+    border-color 120ms ease,
+    transform 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.ypt-tool-card:hover {
+  border-color: #88a9a3;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+}
+
+.ypt-tool-card-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #eff6f4;
+  color: #356860;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.ypt-tool-card-title {
+  margin-top: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.ypt-tool-card-copy {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #6b7280;
+}
+
+.ypt-tool-workspace-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.ypt-tool-workspace-head--flush {
+  padding: 16px 18px 0;
+  margin-bottom: 0;
+}
+
+.ypt-tool-workspace-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.ypt-tool-workspace-title {
+  margin-top: 3px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.ypt-tool-back-btn {
+  appearance: none;
+  border: 1px solid #d8d2c8;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #475569;
+  padding: 7px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  transition:
+    border-color 120ms ease,
+    color 120ms ease,
+    background-color 120ms ease;
+}
+
+.ypt-tool-back-btn:hover {
+  border-color: #88a9a3;
+  color: #356860;
+  background: #f4faf8;
+}
+
+.ypt-calc-shell {
+  border: 1px solid #e5e2dc;
+  border-radius: 24px;
+  background: linear-gradient(180deg, #ffffff 0%, #f9f6f0 100%);
+  padding: 16px;
+}
+
+.ypt-calc-device {
+  max-width: 448px;
+  margin: 0 auto;
+  border-radius: 28px;
+  padding: 16px;
+  background: linear-gradient(180deg, #3a3e43 0%, #1f2428 100%);
+  border: 1px solid #111418;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 18px 40px rgba(16, 24, 40, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ypt-calc-display {
+  border-radius: 18px;
+  border: 1px solid #a2ad98;
+  background: linear-gradient(180deg, #dce6d4 0%, #c7d4bf 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  padding: 12px 14px;
+  color: #1b2421;
+}
+
+.ypt-calc-display-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #4f5b51;
+  margin-bottom: 10px;
+}
+
+.ypt-calc-display-expression {
+  min-height: 18px;
+  font-size: 13px;
+  color: #4a564c;
+  word-break: break-word;
+}
+
+.ypt-calc-display-result {
+  min-height: 44px;
+  margin-top: 6px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 34px;
+  line-height: 1;
+  text-align: right;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  word-break: break-word;
+}
+
+.ypt-calc-display-hint {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #5f6a61;
+  text-align: right;
+}
+
+.ypt-calc-history {
+  display: grid;
+  gap: 8px;
+  max-height: 140px;
+  overflow: auto;
+}
+
+.ypt-calc-history-empty {
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  padding: 12px;
+  font-size: 12px;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.ypt-calc-history-card {
+  width: 100%;
+  border: 1px solid #4b5056;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #edf2f7;
+  padding: 8px 10px;
+  text-align: left;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.ypt-calc-history-card:hover {
+  border-color: #8aaea8;
+  background: rgba(138, 174, 168, 0.08);
+}
+
+.ypt-calc-history-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.ypt-calc-history-expression {
+  font-size: 11px;
+  color: #c5ced8;
+  word-break: break-word;
+}
+
+.ypt-calc-history-mode {
+  font-size: 10px;
+  color: #8d98a5;
+  white-space: nowrap;
+}
+
+.ypt-calc-history-result {
+  margin-top: 4px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.ypt-calc-mode-panel {
+  border: 1px solid #4b5056;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 10px;
+}
+
+.ypt-calc-mode-head {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #cbd5e1;
+}
+
+.ypt-calc-mode-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ypt-calc-mode-btn {
+  appearance: none;
+  border: 1px solid #59616b;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #e5e7eb;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  transition:
+    border-color 120ms ease,
+    color 120ms ease,
+    background-color 120ms ease;
+}
+
+.ypt-calc-mode-btn:hover,
+.ypt-calc-mode-btn.is-active {
+  border-color: #8aaea8;
+  color: #dff0ec;
+  background: rgba(136, 169, 163, 0.14);
+}
+
+.ypt-calc-keypad {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ypt-calc-key {
+  min-height: 56px;
+  border-radius: 12px;
+  border: 1px solid #1a1f24;
+  padding: 7px 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  transition:
+    transform 120ms ease,
+    border-color 120ms ease,
+    filter 120ms ease;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 3px 0 rgba(0, 0, 0, 0.24);
+}
+
+.ypt-calc-key:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+}
+
+.ypt-calc-key--number {
+  background: linear-gradient(180deg, #555a61 0%, #3f444b 100%);
+  color: #f8fafc;
+}
+
+.ypt-calc-key--function {
+  background: linear-gradient(180deg, #353a40 0%, #282d33 100%);
+  color: #f8fafc;
+}
+
+.ypt-calc-key--utility {
+  background: linear-gradient(180deg, #2f3438 0%, #23272c 100%);
+  color: #e5e7eb;
+}
+
+.ypt-calc-key--operator {
+  background: linear-gradient(180deg, #444952 0%, #31363d 100%);
+  color: #f8fafc;
+}
+
+.ypt-calc-key--equals {
+  background: linear-gradient(180deg, #5b7da8 0%, #40628e 100%);
+  border-color: #355276;
+  color: #ffffff;
+}
+
+.ypt-calc-key--active {
+  border-color: #9dc9c1;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 1px rgba(157, 201, 193, 0.32),
+    0 3px 0 rgba(0, 0, 0, 0.24);
+}
+
+.ypt-calc-key-secondary {
+  font-size: 10px;
+  line-height: 1;
+  color: #d8b468;
+}
+
+.ypt-calc-key-label {
+  font-size: 17px;
+  line-height: 1;
+  font-weight: 600;
+}
+
+.ypt-calc-key-label--small {
+  font-size: 13px;
+}
+
+.ypt-graph-shell {
+  border: 1px solid #e5e2dc;
+  border-radius: 24px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.ypt-graph-workspace {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  min-height: 620px;
+}
+
+.ypt-graph-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  background: #fbfaf7;
+  border-right: 1px solid #ece7df;
+  min-width: 0;
+}
+
+.ypt-graph-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ypt-graph-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.ypt-graph-section-copy {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.ypt-graph-pill-btn,
+.ypt-graph-icon-btn,
+.ypt-graph-toolbar-btn,
+.ypt-graph-add-btn {
+  appearance: none;
+  border: 1px solid #d8d2c8;
+  background: #ffffff;
+  color: #475569;
+  transition:
+    border-color 120ms ease,
+    color 120ms ease,
+    background-color 120ms ease;
+}
+
+.ypt-graph-pill-btn:hover,
+.ypt-graph-icon-btn:hover,
+.ypt-graph-toolbar-btn:hover,
+.ypt-graph-add-btn:hover {
+  border-color: #88a9a3;
+  color: #356860;
+  background: #f4faf8;
+}
+
+.ypt-graph-add-btn {
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.ypt-graph-expression-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ypt-graph-row {
+  border: 1px solid #e5e2dc;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.ypt-graph-row.is-selected {
+  border-color: #88a9a3;
+  background: #f8fcfb;
+  box-shadow: 0 0 0 1px rgba(136, 169, 163, 0.24);
+}
+
+.ypt-graph-row.is-disabled {
+  opacity: 0.7;
+}
+
+.ypt-graph-row-top {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.ypt-graph-visibility {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  padding: 0;
+}
+
+.ypt-graph-visibility.is-on {
+  background: currentColor;
+}
+
+.ypt-graph-visibility.is-off {
+  background: transparent;
+  opacity: 0.45;
+}
+
+.ypt-graph-color-chip {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.08);
+}
+
+.ypt-graph-input {
+  width: 100%;
+  border: 1px solid #d8d2c8;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #0f172a;
+}
+
+.ypt-graph-input:focus {
+  outline: none;
+  border-color: #7ca7a0;
+  box-shadow: 0 0 0 3px rgba(74, 124, 116, 0.08);
+}
+
+.ypt-graph-icon-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ypt-graph-row-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.ypt-graph-row-error {
+  font-size: 11px;
+  color: #b45309;
+}
+
+.ypt-graph-table {
+  margin-top: auto;
+  border-top: 1px solid #ece7df;
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ypt-graph-table-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ypt-graph-table-field label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.ypt-graph-table-field input {
+  width: 100%;
+  border: 1px solid #d8d2c8;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 7px 9px;
+  font-size: 12px;
+}
+
+.ypt-graph-table-grid {
+  border: 1px solid #e5e2dc;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.ypt-graph-table-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ypt-graph-table-row + .ypt-graph-table-row {
+  border-top: 1px solid #f1eee9;
+}
+
+.ypt-graph-table-row > div {
+  padding: 7px 9px;
+  font-size: 12px;
+  color: #334155;
+}
+
+.ypt-graph-table-row--head > div {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  background: #f8fafc;
+}
+
+.ypt-graph-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #ffffff;
+}
+
+.ypt-graph-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #ece7df;
+}
+
+.ypt-graph-toolbar-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ypt-graph-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ypt-graph-toolbar-btn {
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.ypt-graph-toolbar-btn.is-active {
+  border-color: #88a9a3;
+  color: #356860;
+  background: #eef6f4;
+}
+
+.ypt-graph-statusbar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px 14px 0;
+}
+
+.ypt-graph-status-card {
+  border: 1px solid #ece7df;
+  border-radius: 16px;
+  background: #fcfbf8;
+  padding: 10px 12px;
+  min-width: 0;
+}
+
+.ypt-graph-status-label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.ypt-graph-status-value {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ypt-graph-range-controls {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #ece7df;
+}
+
+.ypt-graph-range-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.ypt-graph-range-field input {
+  width: 100%;
+  border: 1px solid #d8d2c8;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 7px 9px;
+  font-size: 12px;
+  color: #0f172a;
+}
+
+.ypt-graph-viewport-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 540px;
+  background:
+    linear-gradient(180deg, #fdfdfb 0%, #faf9f5 100%);
+}
+
+.ypt-graph-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: crosshair;
+}
+
+.ypt-graph-trace-pill {
+  position: absolute;
+  pointer-events: none;
+  transform: translate(12px, -110%);
+  border: 1px solid #d8d2c8;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.94);
+  padding: 6px 8px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+  max-width: 220px;
+}
+
+.ypt-graph-trace-title {
+  font-size: 11px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ypt-graph-trace-value {
+  margin-top: 2px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  color: #0f172a;
+}
+
+.ypt-graph-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #94a3b8;
+  text-align: center;
+  padding: 24px;
+}
+
+@media (max-width: 960px) {
+  .ypt-graph-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .ypt-graph-panel {
+    border-right: none;
+    border-bottom: 1px solid #ece7df;
+  }
+
+  .ypt-graph-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ypt-graph-statusbar,
+  .ypt-graph-range-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .lerna-main {
+    min-height: 100dvh;
+    padding-top: var(--lerna-mobile-top-offset);
+    padding-bottom: var(--lerna-mobile-bottom-offset);
+  }
+
+  .lerna-main--planner {
+    height: calc(100dvh - var(--lerna-mobile-top-offset) - var(--lerna-mobile-bottom-offset));
+    margin-top: var(--lerna-mobile-top-offset);
+    margin-bottom: var(--lerna-mobile-bottom-offset);
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .lerna-main-inner {
+    padding: 20px 16px 24px;
+  }
+
+  .lerna-progress-summary,
+  .lerna-progress-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .lerna-panel-page.lerna-panel-page,
+  .lerna-progress-page.lerna-progress-page,
+  .lerna-deck-detail {
+    max-width: none;
+  }
+
+  .lerna-study-card.lerna-study-card {
+    max-width: 100%;
+    min-height: 17rem;
+    padding: 32px 24px;
+  }
+
+  .lerna-desktop-brand {
+    justify-content: center;
+  }
+
+  .ypt-tool-home-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ypt-tool-workspace-head {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .ypt-calc-shell,
+  .ypt-graph-shell {
+    border-radius: 20px;
+  }
+
+  .ypt-calc-device {
+    max-width: none;
+  }
+
+  .ypt-calc-keypad {
+    gap: 6px;
+  }
+
+  .ypt-calc-key {
+    min-height: 52px;
+  }
+
+  .ypt-graph-row-top {
+    grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+  }
+
+  .ypt-graph-row-top .ypt-graph-icon-btn:last-child {
+    display: none;
+  }
+
+  .ypt-graph-table-controls,
+  .ypt-graph-statusbar,
+  .ypt-graph-range-controls {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* The @media (max-width:767px) block here previously duplicated the rules in
+   the 720px block above. Consolidated into the 720px block. Kept intentionally
+   empty to preserve source line order for downstream diff reviewers. */
+
+@media (min-width: 768px) {
+  .lerna-mobile-topbar,
+  .lerna-mobile-bottomnav,
+  .lerna-mobile-sheet,
+  .lerna-mobile-sheet-backdrop {
+    display: none;
+  }
+}
+
+/* =========================================================================
+   Lerna mobile repair pass (2026-04-16) — in-place hygiene for the Capacitor
+   WebView + mobile browsers. CSS-only. No class renames, no markup changes.
+   Targets: tap response, safe areas, touch targets, input zoom, sheet scroll,
+   backdrop-filter fallback, reduced-motion, focus visibility.
+   ========================================================================= */
+
+/* 1. Global mobile hygiene — prevent iOS text auto-resize, kill tap flash,
+      lock overscroll bounce on the app shell, normalize touch response. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+body {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+.lerna-app-shell {
+  overscroll-behavior: none;
+}
+button,
+a,
+[role="button"],
+.lerna-mobile-topbar-action,
+.lerna-mobile-sheet-link,
+.lerna-mobile-sheet-close {
+  touch-action: manipulation;
+}
+
+/* 2. iOS input-zoom guard — any input/textarea/select rendered on mobile
+      must be ≥16px font-size to prevent Safari auto-zoom on focus. */
+@media (max-width: 767px) {
+  input,
+  textarea,
+  select {
+    font-size: max(16px, 1rem);
+  }
+}
+
+/* 3. Touch-target minimums (WCAG AA 44x44). Applied only on mobile so we
+      don't enlarge desktop affordances. */
+@media (max-width: 767px) {
+  .lerna-mobile-topbar-action,
+  .lerna-mobile-sheet-close {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .lerna-mobile-bottomnav {
+    min-height: calc(56px + var(--lerna-safe-bottom));
+  }
+  .lerna-mobile-bottomnav > * {
+    min-height: 48px;
+  }
+}
+
+/* 4. Mobile sheet — cap height and allow internal scroll on short devices,
+      keep backdrop from eating background scroll, add -webkit fallback. */
+.lerna-mobile-sheet {
+  max-height: calc(100dvh - var(--lerna-safe-top) - 24px);
+  overflow: hidden;
+}
+.lerna-mobile-sheet-panel {
+  max-height: calc(100dvh - var(--lerna-safe-top) - 40px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.lerna-mobile-sheet-backdrop {
+  overscroll-behavior: contain;
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+.lerna-mobile-topbar {
+  -webkit-backdrop-filter: blur(18px);
+}
+.lerna-mobile-bottomnav {
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* 5. Focus visibility — keep a calm outline for keyboard users in the
+      Capacitor WebView without adding desktop hover noise. */
+.lerna-mobile-topbar-action:focus-visible,
+.lerna-mobile-sheet-link:focus-visible,
+.lerna-mobile-sheet-close:focus-visible {
+  outline: 2px solid var(--lerna-brand-strong);
+  outline-offset: 2px;
+}
+
+/* 6. Reduced motion — honor OS setting; the sheet-link lift is the only
+      movement motion that can be disabled safely. */
+@media (prefers-reduced-motion: reduce) {
+  .lerna-mobile-sheet-link,
+  .lerna-mobile-sheet-link:hover,
+  .lerna-mobile-sheet-link.is-active {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* 7. Landscape phones — suppress hover lift which flickers on touch,
+      and tighten main padding so topbar/bottomnav don't starve content. */
+@media (max-width: 767px) and (hover: none) {
+  .lerna-mobile-sheet-link:hover {
+    transform: none;
+  }
+}
+@media (max-width: 767px) and (orientation: landscape) {
+  .lerna-main-inner {
+    padding: 14px 16px 20px;
+  }
+}
+
+.lerna-plan-month-frame {
+  border: 1px solid #e5e2dc;
+  border-radius: 24px;
+  background: linear-gradient(180deg, #fffefe 0%, #f8f6f1 100%);
+  overflow: hidden;
+}
+
+.lerna-plan-month-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0;
+  padding: 14px 10px 10px;
+  border-bottom: 1px solid #efeae2;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.lerna-plan-month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+  padding: 10px;
+}
+
+.lerna-plan-month-blank {
+  min-height: 118px;
+}
+
+.lerna-plan-month-card {
+  min-height: 118px;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid #ece7df;
+  padding: 10px;
+  background: #fffdf9;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.lerna-plan-month-card:hover {
+  border-color: #cfdcd7;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+.lerna-plan-month-card.is-selected {
+  border-color: #4a7c74;
+  box-shadow: 0 0 0 1px rgba(74, 124, 116, 0.12);
+}
+
+.lerna-plan-month-card.is-today {
+  background:
+    linear-gradient(180deg, rgba(240, 247, 245, 0.95) 0%, rgba(255, 253, 249, 0.98) 100%);
+}
+
+.lerna-plan-month-density-0 {
+  background: #fffdf9;
+}
+
+.lerna-plan-month-density-1 {
+  background:
+    linear-gradient(180deg, rgba(240, 247, 245, 0.42) 0%, rgba(255, 253, 249, 0.98) 100%);
+}
+
+.lerna-plan-month-density-2 {
+  background:
+    linear-gradient(180deg, rgba(224, 240, 236, 0.58) 0%, rgba(255, 253, 249, 0.98) 100%);
+}
+
+.lerna-plan-month-density-3 {
+  background:
+    linear-gradient(180deg, rgba(204, 228, 221, 0.82) 0%, rgba(255, 253, 249, 0.98) 100%);
+}
+
+.lerna-plan-month-density-4 {
+  background:
+    linear-gradient(180deg, rgba(180, 212, 202, 0.96) 0%, rgba(252, 249, 243, 1) 100%);
+}
+
+@media (max-width: 767px) {
+  .lerna-plan-month-weekdays {
+    padding: 10px 6px 8px;
+  }
+
+  .lerna-plan-month-grid {
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .lerna-plan-month-blank,
+  .lerna-plan-month-card {
+    min-height: 78px;
+  }
+
+  .lerna-plan-month-card {
+    padding: 7px 6px;
+    border-radius: 14px;
+  }
+
+  .lerna-plan-month-card .lerna-month-mobile-hide,
+  .lerna-plan-month-card .lerna-month-empty-label {
+    display: none !important;
+  }
+
+  .lerna-plan-month-card .lerna-month-today-pill {
+    white-space: nowrap;
+    line-height: 1.1;
+    font-size: 9px;
+  }
+}

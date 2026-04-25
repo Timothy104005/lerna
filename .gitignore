@@ -1,0 +1,43 @@
+# Cowork / Playwright internal files
+.playwright-cli/
+.playwright-share.js
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor junk
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Node (if ever added)
+node_modules/
+.next/
+dist/
+build/
+coverage/
+
+# Android / Capacitor build outputs
+android/.gradle/
+android/.idea/
+android/local.properties
+android/app/build/
+android/captures/
+android/keystore.properties
+
+# Environment / secrets
+.env
+.env.local
+.env*.local
+
+# Test scratch files
+test.txt
+test_write.txt
+test_v11.txt
+v11test.html

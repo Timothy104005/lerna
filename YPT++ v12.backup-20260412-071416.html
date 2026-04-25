@@ -1,0 +1,1536 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>YPT++</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f3ef;color:#1a1a1a;min-height:100vh}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#e5e2dc;border-radius:4px}
+.flip-wrap{perspective:1200px;cursor:pointer}
+.flip-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .45s cubic-bezier(.4,0,.2,1)}
+.flip-inner.flipped{transform:rotateY(180deg)}
+.flip-front,.flip-back{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;align-items:center;justify-content:center;padding:2rem;text-align:center}
+.flip-back{transform:rotateY(180deg)}
+.drawer-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:40;animation:fadeIn .2s ease}
+.drawer{position:fixed;right:0;top:0;height:100%;width:min(500px,100vw);background:#fff;z-index:50;box-shadow:-8px 0 32px rgba(0,0,0,.12);display:flex;flex-direction:column;animation:slideIn .25s cubic-bezier(.4,0,.2,1)}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 12px;border-radius:12px;cursor:pointer;transition:all .15s;font-size:11px;font-weight:500;color:#9ca3af;border:none;background:transparent}
+.nav-item:hover{color:#6b7280;background:#f0ede8}
+.nav-item.active{color:#4a7c74;background:#f0f7f5}
+textarea{resize:vertical;font-family:inherit}
+input,select,textarea{font-family:inherit}
+.line-clamp-1{overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical}
+.line-clamp-2{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useCallback,useMemo,useRef}=React
+
+/* ─── colours ─────────────────────────────────────────────── */
+const C={
+  bg:'#f5f3ef',card:'#ffffff',
+  accent:'#4a7c74',accentHover:'#3d6b64',accentLight:'#f0f7f5',
+  border:'#e5e2dc',light:'#f0ede8',
+  t1:'#1a1a1a',t2:'#6b7280',t3:'#9ca3af',
+  newBg:'#f3f4f6',newClr:'#9ca3af',
+  learningBg:'#fef3c7',learningClr:'#d97706',
+  masteredBg:'#f0f7f5',masteredClr:'#4a7c74',
+  star:'#f59e0b',
+}
+
+/* ─── utils ───────────────────────────────────────────────── */
+const uid=()=>Math.random().toString(36).slice(2)+Date.now().toString(36)
+const ts=()=>new Date().toISOString()
+const fmtRel=d=>{
+  if(!d)return'Never'
+  const s=(Date.now()-new Date(d))/1000
+  if(s<60)return'Just now'
+  if(s<3600)return`${Math.floor(s/60)}m ago`
+  if(s<86400)return`${Math.floor(s/3600)}h ago`
+  return new Date(d).toLocaleDateString(undefined,{month:'short',day:'numeric'})
+}
+
+/* ─── default subjects ────────────────────────────────────── */
+const DEF_SUBJ=[
+  {id:'math',name:'Math',color:'#4a7c74'},
+  {id:'eng',name:'English',color:'#6b7280'},
+  {id:'sci',name:'Science',color:'#0ea5e9'},
+  {id:'hist',name:'History',color:'#92400e'},
+  {id:'lang',name:'Language',color:'#7c3aed'},
+  {id:'other',name:'Other',color:'#9ca3af'},
+]
+
+/* ─── store ───────────────────────────────────────────────── */
+const SK='yptpp_v12'
+const DEF={page:'learn',settings:{lang:'en',goalMin:120},decks:[],subjects:DEF_SUBJ,notes:[],sessions:[],tasks:[],groups:[]}
+const loadS=()=>{try{const s=localStorage.getItem(SK);return s?{...DEF,...JSON.parse(s)}:DEF}catch{return DEF}}
+const saveS=s=>{try{localStorage.setItem(SK,JSON.stringify(s))}catch{}}
+
+function useStore(){
+  const [state,setRaw]=useState(()=>loadS())
+  const set=useCallback(fn=>{
+    setRaw(prev=>{const next=typeof fn==='function'?fn(prev):{...prev,...fn};saveS(next);return next})
+  },[])
+  const nav=useCallback((page,extra={})=>set(s=>({...s,page,...extra})),[set])
+  return{state,set,nav}
+}
+
+/* ─── shared components ───────────────────────────────────── */
+function Btn({children,v='primary',sz='md',onClick,disabled,cls='',type='button'}){
+  const base='inline-flex items-center justify-center font-medium rounded-xl transition-colors focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed'
+  const sizes={sm:'px-3 py-1.5 text-xs gap-1',md:'px-4 py-2 text-sm gap-1.5',lg:'px-5 py-2.5 text-sm gap-2'}
+  const vs={
+    primary:'bg-[#4a7c74] text-white hover:bg-[#3d6b64]',
+    secondary:'bg-white border border-[#e5e2dc] text-[#1a1a1a] hover:bg-[#f0ede8]',
+    ghost:'text-[#6b7280] hover:text-[#1a1a1a] hover:bg-[#f0ede8]',
+    outline:'border border-[#4a7c74] text-[#4a7c74] hover:bg-[#f0f7f5]',
+    danger:'text-red-500 hover:bg-red-50',
+  }
+  return <button type={type} onClick={onClick} disabled={disabled} className={`${base} ${sizes[sz]||sizes.md} ${vs[v]||vs.primary} ${cls}`}>{children}</button>
+}
+
+function SChip({subj,active,onClick}){
+  if(!subj)return null
+  return(
+    <button onClick={onClick} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${active?'bg-[#4a7c74] text-white':'bg-[#f0ede8] text-[#6b7280] hover:bg-[#e5e2dc]'}`}>
+      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{background:subj.color}}/>
+      {subj.name}
+    </button>
+  )
+}
+
+function SBar({val,onChange,ph='Search...'}){
+  return(
+    <div className="relative">
+      <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9ca3af] pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <input value={val} onChange={e=>onChange(e.target.value)} placeholder={ph} className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-[#e5e2dc] rounded-xl focus:ring-1 focus:ring-[#4a7c74] focus:border-[#4a7c74] placeholder-[#9ca3af]"/>
+    </div>
+  )
+}
+
+function PBar({val,max,color}){
+  const pct=max>0?Math.min(100,Math.round(val/max*100)):0
+  return(
+    <div className="h-1.5 bg-[#f0ede8] rounded-full overflow-hidden">
+      <div className="h-full rounded-full transition-all duration-500" style={{width:`${pct}%`,background:color||C.accent}}/>
+    </div>
+  )
+}
+
+function MBadge({s}){
+  const m={new:{bg:C.newBg,c:C.newClr,l:'New'},learning:{bg:C.learningBg,c:C.learningClr,l:'Learning'},mastered:{bg:C.masteredBg,c:C.masteredClr,l:'Mastered'}}
+  const x=m[s]||m.new
+  return <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{background:x.bg,color:x.c}}>{x.l}</span>
+}
+
+function Empty({icon='📚',title,desc,action}){
+  return(
+    <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+      <div className="text-4xl mb-3">{icon}</div>
+      <p className="text-sm font-semibold text-[#1a1a1a] mb-1">{title}</p>
+      {desc&&<p className="text-sm text-[#6b7280] mb-4 max-w-xs">{desc}</p>}
+      {action}
+    </div>
+  )
+}
+
+function Modal({title,children,onClose,sz='md'}){
+  const ws={sm:'max-w-sm',md:'max-w-md',lg:'max-w-lg',xl:'max-w-2xl'}
+  useEffect(()=>{
+    const h=e=>{if(e.key==='Escape')onClose()}
+    window.addEventListener('keydown',h)
+    return()=>window.removeEventListener('keydown',h)
+  },[onClose])
+  return(
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}>
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm"/>
+      <div className={`relative w-full ${ws[sz]||ws.md} bg-white rounded-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto`}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-base font-semibold text-[#1a1a1a]">{title}</h3>
+          <button onClick={onClose} className="text-[#9ca3af] hover:text-[#6b7280] p-1.5 rounded-lg hover:bg-[#f0ede8] transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function Field({label,children,hint}){
+  return(
+    <div className="mb-4">
+      <label className="block text-xs font-medium text-[#6b7280] mb-1.5">{label}</label>
+      {children}
+      {hint&&<p className="text-xs text-[#9ca3af] mt-1">{hint}</p>}
+    </div>
+  )
+}
+
+const inputCls="w-full px-3 py-2 text-sm bg-white border border-[#e5e2dc] rounded-xl focus:ring-1 focus:ring-[#4a7c74] focus:border-[#4a7c74] placeholder-[#9ca3af]"
+const selectCls="w-full px-3 py-2 text-sm bg-white border border-[#e5e2dc] rounded-xl focus:ring-1 focus:ring-[#4a7c74] focus:border-[#4a7c74]"
+
+/* ─── DeckCard ────────────────────────────────────────────── */
+function DeckCard({deck,subjects,onOpen,onStudy,onDelete}){
+  const subj=subjects.find(s=>s.id===deck.subjectId)
+  const cards=deck.cards||[]
+  const mastered=cards.filter(c=>c.masteryStatus==='mastered').length
+  const starred=cards.filter(c=>c.starred).length
+  const needsReview=cards.filter(c=>c.masteryStatus!=='mastered').length
+  return(
+    <div className="bg-white border border-[#e5e2dc] rounded-2xl p-4 hover:border-[#4a7c74]/50 hover:shadow-sm transition-all cursor-pointer group flex flex-col" onClick={onOpen}>
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex-1 min-w-0">
+          {subj&&<SChip subj={subj}/>}
+          <h3 className="text-base font-semibold text-[#1a1a1a] mt-1.5 leading-snug line-clamp-2">{deck.title}</h3>
+        </div>
+        <button onClick={e=>{e.stopPropagation();onDelete&&onDelete()}} className="opacity-0 group-hover:opacity-100 text-[#9ca3af] hover:text-red-400 p-1 ml-2 rounded-lg transition-all flex-shrink-0">
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      {deck.description&&<p className="text-xs text-[#6b7280] mb-3 line-clamp-2">{deck.description}</p>}
+      <div className="mt-auto">
+        <div className="flex items-center gap-2.5 text-xs text-[#9ca3af] mb-2">
+          <span>{cards.length} cards</span>
+          {starred>0&&<span className="text-[#f59e0b]">★ {starred}</span>}
+          {needsReview>0&&<span className="text-[#d97706]">{needsReview} to review</span>}
+        </div>
+        <PBar val={mastered} max={cards.length||1}/>
+        <div className="flex items-center justify-between mt-2">
+          <span className="text-xs text-[#9ca3af]">{cards.length?`${mastered}/${cards.length} mastered`:'No cards'}</span>
+          <Btn sz="sm" onClick={e=>{e.stopPropagation();onStudy&&onStudy()}} cls="opacity-0 group-hover:opacity-100">Study</Btn>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ─── NoteCard ────────────────────────────────────────────── */
+function NoteCard({note,subjects,decks,onOpen}){
+  const subj=subjects.find(s=>s.id===note.subjectId)
+  const deck=decks.find(d=>d.id===note.linkedDeckId)
+  const snip=(note.content||'').replace(/<[^>]+>/g,'').slice(0,100)
+  return(
+    <div className="bg-white border border-[#e5e2dc] rounded-xl p-3.5 hover:border-[#4a7c74]/40 hover:shadow-sm transition-all cursor-pointer" onClick={onOpen}>
+      <div className="flex items-start justify-between mb-1">
+        <h4 className="text-sm font-medium text-[#1a1a1a] line-clamp-1 flex-1">{note.title||'Untitled'}</h4>
+        <span className="text-xs text-[#9ca3af] whitespace-nowrap ml-2 flex-shrink-0">{fmtRel(note.updatedAt)}</span>
+      </div>
+      {snip&&<p className="text-xs text-[#6b7280] line-clamp-2 mb-1.5">{snip}</p>}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {subj&&<SChip subj={subj}/>}
+        {deck&&<span className="text-xs text-[#9ca3af]">→ {deck.title}</span>}
+      </div>
+    </div>
+  )
+}
+
+/* ─── DeckFormModal ───────────────────────────────────────── */
+function DeckFormModal({deck,subjects,onSave,onClose}){
+  const [form,setF]=useState({title:deck?.title||'',description:deck?.description||'',subjectId:deck?.subjectId||'',defaultFrontLang:deck?.defaultFrontLang||'en',defaultBackLang:deck?.defaultBackLang||'en'})
+  const upd=k=>e=>setF(f=>({...f,[k]:e.target.value}))
+  const save=()=>{if(!form.title.trim())return;onSave(form)}
+  return(
+    <Modal title={deck?'Edit Deck':'New Deck'} onClose={onClose}>
+      <Field label="Title"><input className={inputCls} value={form.title} onChange={upd('title')} placeholder="e.g. Biology Chapter 5"/></Field>
+      <Field label="Description (optional)"><textarea className={`${inputCls} min-h-[70px]`} value={form.description} onChange={upd('description')} placeholder="What's in this deck?"/></Field>
+      <Field label="Subject">
+        <select className={selectCls} value={form.subjectId} onChange={upd('subjectId')}>
+          <option value="">No subject</option>
+          {subjects.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
+      </Field>
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <Field label="Front language">
+          <select className={selectCls} value={form.defaultFrontLang} onChange={upd('defaultFrontLang')}>
+            {[['en','English'],['zh-TW','Chinese (TW)'],['zh-CN','Chinese (CN)'],['ja','Japanese'],['ko','Korean'],['es','Spanish'],['fr','French'],['de','German']].map(([v,l])=><option key={v} value={v}>{l}</option>)}
+          </select>
+        </Field>
+        <Field label="Back language">
+          <select className={selectCls} value={form.defaultBackLang} onChange={upd('defaultBackLang')}>
+            {[['en','English'],['zh-TW','Chinese (TW)'],['zh-CN','Chinese (CN)'],['ja','Japanese'],['ko','Korean'],['es','Spanish'],['fr','French'],['de','German']].map(([v,l])=><option key={v} value={v}>{l}</option>)}
+          </select>
+        </Field>
+      </div>
+      <div className="flex justify-end gap-2">
+        <Btn v="secondary" onClick={onClose}>Cancel</Btn>
+        <Btn onClick={save} disabled={!form.title.trim()}>Save Deck</Btn>
+      </div>
+    </Modal>
+  )
+}
+
+/* ─── LearnHome (/learn) ──────────────────────────────────── */
+function LearnHome({state,set,goTo}){
+  const {decks,subjects,notes}=state
+  const sorted=[...decks].sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt))
+  const recent=sorted.slice(0,4)
+  const continueD=[...decks].filter(d=>d.lastStudiedAt).sort((a,b)=>new Date(b.lastStudiedAt)-new Date(a.lastStudiedAt)).slice(0,1)
+  const reviewQ=decks.filter(d=>(d.cards||[]).some(c=>c.masteryStatus!=='mastered')&&(d.cards||[]).length>0).slice(0,4)
+  const recentN=[...notes].sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt)).slice(0,5)
+  const totalCards=decks.reduce((n,d)=>n+(d.cards||[]).length,0)
+  const totalMastered=decks.reduce((n,d)=>n+(d.cards||[]).filter(c=>c.masteryStatus==='mastered').length,0)
+  const [showNewDeck,setND]=useState(false)
+
+  const createDeck=form=>{
+    const d={...form,id:uid(),cards:[],createdAt:ts(),updatedAt:ts()}
+    set(s=>({...s,decks:[...s.decks,d]}))
+    setND(false)
+    goTo({page:'deck',deckId:d.id})
+  }
+
+  return(
+    <div className="max-w-5xl mx-auto px-4 py-6">
+      {/* header */}
+      <div className="flex items-center justify-between mb-5">
+        <h1 className="text-3xl font-bold text-[#1a1a1a]">Learn</h1>
+        <div className="flex items-center gap-2">
+          <Btn v="secondary" sz="sm" onClick={()=>goTo({page:'import'})}>⬇ Import</Btn>
+          <Btn v="secondary" sz="sm" onClick={()=>goTo({page:'notes'})}>📝 Notes</Btn>
+          <Btn sz="sm" onClick={()=>setND(true)}>+ New Deck</Btn>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* left (wider) */}
+        <div className="lg:col-span-2 space-y-5">
+
+          {/* continue learning */}
+          {continueD.length>0&&(
+            <section>
+              <h2 className="text-xs font-semibold text-[#9ca3af] uppercase tracking-wider mb-2">Continue Learning</h2>
+              {continueD.map(deck=>{
+                const subj=subjects.find(s=>s.id===deck.subjectId)
+                const cards=deck.cards||[]
+                const mastered=cards.filter(c=>c.masteryStatus==='mastered').length
+                return(
+                  <div key={deck.id} className="bg-white border border-[#e5e2dc] rounded-2xl p-4 flex items-center gap-4">
+                    <div className="flex-1 min-w-0">
+                      {subj&&<SChip subj={subj}/>}
+                      <h3 className="text-base font-semibold text-[#1a1a1a] mt-1 mb-1.5">{deck.title}</h3>
+                      <PBar val={mastered} max={cards.length||1}/>
+                      <p className="text-xs text-[#9ca3af] mt-1">{mastered}/{cards.length} mastered · {fmtRel(deck.lastStudiedAt)}</p>
+                    </div>
+                    <Btn onClick={()=>goTo({page:'study',deckId:deck.id,mode:'flash'})}>Continue</Btn>
+                  </div>
+                )
+              })}
+            </section>
+          )}
+
+          {/* recent decks */}
+          <section>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xs font-semibold text-[#9ca3af] uppercase tracking-wider">Recent Decks</h2>
+              <button onClick={()=>goTo({page:'decks'})} className="text-xs text-[#4a7c74] hover:underline">View all →</button>
+            </div>
+            {recent.length===0
+              ?<Empty icon="🃏" title="No decks yet" desc="Create your first flashcard deck." action={<Btn sz="sm" onClick={()=>setND(true)}>Create Deck</Btn>}/>
+              :<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {recent.map(deck=>(
+                  <DeckCard key={deck.id} deck={deck} subjects={subjects}
+                    onOpen={()=>goTo({page:'deck',deckId:deck.id})}
+                    onStudy={()=>goTo({page:'study',deckId:deck.id,mode:'flash'})}
+                    onDelete={()=>{if(confirm(`Delete "${deck.title}"?`))set(s=>({...s,decks:s.decks.filter(d=>d.id!==deck.id)}))}}
+                  />
+                ))}
+              </div>
+            }
+          </section>
+
+          {/* review queue */}
+          {reviewQ.length>0&&(
+            <section>
+              <h2 className="text-xs font-semibold text-[#9ca3af] uppercase tracking-wider mb-2">Review Queue</h2>
+              <div className="bg-white border border-[#e5e2dc] rounded-2xl divide-y divide-[#f0ede8]">
+                {reviewQ.map(deck=>{
+                  const cards=deck.cards||[]
+                  const weak=cards.filter(c=>c.masteryStatus!=='mastered').length
+                  const starred=cards.filter(c=>c.starred).length
+                  return(
+                    <div key={deck.id} className="flex items-center justify-between px-4 py-3">
+                      <div>
+                        <p className="text-sm font-medium text-[#1a1a1a]">{deck.title}</p>
+                        <p className="text-xs text-[#9ca3af]">{weak} to review{starred>0?` · ★ ${starred} starred`:''}</p>
+                      </div>
+                      <Btn sz="sm" v="outline" onClick={()=>goTo({page:'study',deckId:deck.id,mode:'learn'})}>Review</Btn>
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+          )}
+        </div>
+
+        {/* right (narrower) */}
+        <div className="space-y-4">
+          {/* summary */}
+          <div className="bg-white border border-[#e5e2dc] rounded-2xl p-4">
+            <h2 className="text-xs font-semibold text-[#9ca3af] uppercase tracking-wider mb-3">Summary</h2>
+            <div className="grid grid-cols-2 gap-2">
+              {[['Decks',decks.length,'🗂'],[`Cards`,totalCards,'🃏'],['Mastered',totalMastered,'✅'],['Notes',notes.length,'📝']].map(([l,v,ic])=>(
+                <div key={l} className="bg-[#f5f3ef] rounded-xl p-3 text-center">
+                  <p className="text-xl font-bold text-[#1a1a1a]">{v}</p>
+                  <p className="text-xs text-[#6b7280]">{ic} {l}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* quick actions */}
+          <div className="bg-white border border-[#e5e2dc] rounded-2xl p-4">
+            <h2 className="text-xs font-semibold text-[#9ca3af] uppercase tracking-wider mb-3">Quick Actions</h2>
+            <div className="space-y-1">
+              {[
+                {l:'Create Deck',ic:'🗂',a:()=>setND(true)},
+                {l:'Import Cards',ic:'⬇',a:()=>goTo({page:'import'})},
+                {l:'New Note',ic:'📝',a:()=>goTo({page:'note',noteId:'new'})},
+                {l:'All Decks',ic:'📚',a:()=>goTo({page:'decks'})},
+              ].map(({l,ic,a})=>(
+                <button key={l} onClick={a} className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#f5f3ef] text-sm text-[#1a1a1a] text-left transition-colors">
+                  <span className="w-5 text-base">{ic}</span>{l}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* recent notes */}
+          <section>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xs font-semibold text-[#9ca3af] uppercase tracking-wider">Recent Notes</h2>
+              <button onClick={()=>goTo({page:'notes'})} className="text-xs text-[#4a7c74] hover:underline">View all →</button>
+            </div>
+            {recentN.length===0
+              ?<div className="bg-white border border-[#e5e2dc] rounded-xl p-3 text-center text-xs text-[#9ca3af]">No notes yet</div>
+              :<div className="space-y-2">
+                {recentN.map(n=><NoteCard key={n.id} note={n} subjects={subjects} decks={decks} onOpen={()=>goTo({page:'note',noteId:n.id})}/>)}
+              </div>
+            }
+          </section>
+        </div>
+      </div>
+
+      {showNewDeck&&<DeckFormModal subjects={subjects} onSave={createDeck} onClose={()=>setND(false)}/>}
+    </div>
+  )
+}
+
+/* ─── DeckList (/learn/decks) ─────────────────────────────── */
+function DeckList({state,set,goTo}){
+  const {decks,subjects}=state
+  const [q,setQ]=useState('')
+  const [fSubj,setFS]=useState('')
+  const [sort,setSort]=useState('updated')
+  const [showNew,setNew]=useState(false)
+
+  const filtered=useMemo(()=>{
+    let d=[...decks]
+    if(q)d=d.filter(x=>x.title.toLowerCase().includes(q.toLowerCase()))
+    if(fSubj)d=d.filter(x=>x.subjectId===fSubj)
+    if(sort==='updated')d.sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt))
+    else if(sort==='studied')d.sort((a,b)=>new Date(b.lastStudiedAt||0)-new Date(a.lastStudiedAt||0))
+    else if(sort==='review')d.sort((a,b)=>{
+      const wa=(a.cards||[]).filter(c=>c.masteryStatus!=='mastered').length
+      const wb=(b.cards||[]).filter(c=>c.masteryStatus!=='mastered').length
+      return wb-wa
+    })
+    else if(sort==='alpha')d.sort((a,b)=>a.title.localeCompare(b.title))
+    return d
+  },[decks,q,fSubj,sort])
+
+  const createDeck=form=>{
+    const d={...form,id:uid(),cards:[],createdAt:ts(),updatedAt:ts()}
+    set(s=>({...s,decks:[...s.decks,d]}))
+    setNew(false)
+    goTo({page:'deck',deckId:d.id})
+  }
+
+  return(
+    <div className="max-w-5xl mx-auto px-4 py-6">
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3">
+          <button onClick={()=>goTo({page:'home'})} className="text-[#9ca3af] hover:text-[#6b7280] p-1">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+          </button>
+          <h1 className="text-2xl font-bold text-[#1a1a1a]">Decks</h1>
+          <span className="text-sm text-[#9ca3af]">{decks.length}</span>
+        </div>
+        <div className="flex gap-2">
+          <Btn v="secondary" sz="sm" onClick={()=>goTo({page:'import'})}>Import</Btn>
+          <Btn sz="sm" onClick={()=>setNew(true)}>+ New Deck</Btn>
+        </div>
+      </div>
+
+      {/* filters */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-5">
+        <div className="flex-1"><SBar val={q} onChange={setQ} ph="Search decks…"/></div>
+        <select value={sort} onChange={e=>setSort(e.target.value)} className={`${selectCls} w-auto`}>
+          <option value="updated">Recently updated</option>
+          <option value="studied">Recently studied</option>
+          <option value="review">Needs review</option>
+          <option value="alpha">Alphabetical</option>
+        </select>
+      </div>
+      <div className="flex gap-2 flex-wrap mb-5">
+        <SChip subj={{id:'',name:'All',color:'#9ca3af'}} active={!fSubj} onClick={()=>setFS('')}/>
+        {subjects.map(s=><SChip key={s.id} subj={s} active={fSubj===s.id} onClick={()=>setFS(fSubj===s.id?'':s.id)}/>)}
+      </div>
+
+      {filtered.length===0
+        ?<Empty icon="🃏" title={q||fSubj?'No results':'No decks yet'} desc={q||fSubj?'Try a different search or filter.':'Create your first deck to start studying.'} action={!q&&!fSubj&&<Btn sz="sm" onClick={()=>setNew(true)}>Create Deck</Btn>}/>
+        :<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map(deck=>(
+            <DeckCard key={deck.id} deck={deck} subjects={subjects}
+              onOpen={()=>goTo({page:'deck',deckId:deck.id})}
+              onStudy={()=>goTo({page:'study',deckId:deck.id,mode:'flash'})}
+              onDelete={()=>{if(confirm(`Delete "${deck.title}"?`))set(s=>({...s,decks:s.decks.filter(d=>d.id!==deck.id)}))}}
+            />
+          ))}
+        </div>
+      }
+
+      {showNew&&<DeckFormModal subjects={subjects} onSave={createDeck} onClose={()=>setNew(false)}/>}
+    </div>
+  )
+}
+
+/* ─── CardEditorDrawer ────────────────────────────────────── */
+function CardEditorDrawer({card,deck,onSave,onClose}){
+  const [form,setF]=useState({
+    front:card?.front||'',back:card?.back||'',
+    frontLang:card?.frontLang||deck?.defaultFrontLang||'en',
+    backLang:card?.backLang||deck?.defaultBackLang||'en',
+    starred:card?.starred||false,
+  })
+  const upd=k=>e=>setF(f=>({...f,[k]:e.target.type==='checkbox'?e.target.checked:e.target.value}))
+  const LANGS=[['en','English'],['zh-TW','Chinese (TW)'],['zh-CN','Chinese (CN)'],['ja','Japanese'],['ko','Korean'],['es','Spanish'],['fr','French'],['de','German']]
+  const valid=form.front.trim()&&form.back.trim()
+
+  return(
+    <>
+      <div className="drawer-bg" onClick={onClose}/>
+      <div className="drawer">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#e5e2dc]">
+          <h2 className="text-base font-semibold text-[#1a1a1a]">{card?'Edit Card':'New Card'}</h2>
+          <div className="flex items-center gap-2">
+            <button onClick={()=>setF(f=>({...f,starred:!f.starred}))} className={`p-1.5 rounded-lg transition-colors ${form.starred?'text-[#f59e0b]':'text-[#9ca3af] hover:text-[#f59e0b]'}`}>
+              <svg className="w-5 h-5" fill={form.starred?'currentColor':'none'} viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/></svg>
+            </button>
+            <button onClick={onClose} className="text-[#9ca3af] hover:text-[#6b7280] p-1.5 rounded-lg hover:bg-[#f0ede8]">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          <Field label="Front">
+            <textarea className={`${inputCls} min-h-[110px]`} value={form.front} onChange={upd('front')} placeholder="Term, question, or word…" autoFocus/>
+            <div className="mt-1.5">
+              <select className={`${selectCls} text-xs`} value={form.frontLang} onChange={upd('frontLang')}>
+                {LANGS.map(([v,l])=><option key={v} value={v}>{l}</option>)}
+              </select>
+            </div>
+          </Field>
+          <Field label="Back">
+            <textarea className={`${inputCls} min-h-[110px]`} value={form.back} onChange={upd('back')} placeholder="Definition, answer, or translation…"/>
+            <div className="mt-1.5">
+              <select className={`${selectCls} text-xs`} value={form.backLang} onChange={upd('backLang')}>
+                {LANGS.map(([v,l])=><option key={v} value={v}>{l}</option>)}
+              </select>
+            </div>
+          </Field>
+        </div>
+        <div className="p-5 border-t border-[#e5e2dc] flex gap-2">
+          <Btn v="secondary" onClick={onClose} cls="flex-1">Cancel</Btn>
+          {!card&&<Btn v="outline" disabled={!valid} onClick={()=>onSave(form,true)} cls="flex-1">Save & Add Next</Btn>}
+          <Btn disabled={!valid} onClick={()=>onSave(form,false)} cls="flex-1">Save</Btn>
+        </div>
+      </div>
+    </>
+  )
+}
+
+/* ─── DeckDetail (/learn/decks/:id) ──────────────────────── */
+function DeckDetail({deckId,state,set,goTo}){
+  const {subjects}=state
+  const deck=state.decks.find(d=>d.id===deckId)
+  const [tab,setTab]=useState('cards')
+  const [showEdit,setEdit]=useState(false)
+  const [cardEditor,setCE]=useState(null) // null | 'new' | card
+  const [cardFilter,setCF]=useState('all')
+  const [cardQ,setCQ]=useState('')
+
+  if(!deck)return<div className="p-6 text-[#9ca3af] text-sm">Deck not found. <button onClick={()=>goTo({page:'decks'})} className="text-[#4a7c74] hover:underline">Back to decks</button></div>
+
+  const subj=subjects.find(s=>s.id===deck.subjectId)
+  const cards=deck.cards||[]
+  const mastered=cards.filter(c=>c.masteryStatus==='mastered').length
+  const learning=cards.filter(c=>c.masteryStatus==='learning').length
+  const newC=cards.filter(c=>c.masteryStatus==='new').length
+
+  const updDeck=data=>set(s=>({...s,decks:s.decks.map(d=>d.id===deckId?{...d,...data,updatedAt:ts()}:d)}))
+  const delDeck=()=>{if(confirm(`Delete "${deck.title}" and all its cards?`)){set(s=>({...s,decks:s.decks.filter(d=>d.id!==deckId)}));goTo({page:'decks'})}}
+
+  const addCard=(form,addNext)=>{
+    const c={...form,id:uid(),masteryStatus:'new',order:cards.length,lastReviewedAt:null,createdAt:ts(),updatedAt:ts()}
+    updDeck({cards:[...cards,c]})
+    if(!addNext)setCE(null)
+    else setCE('new')
+  }
+  const editCard=(card,form)=>{updDeck({cards:cards.map(c=>c.id===card.id?{...c,...form,updatedAt:ts()}:c)});setCE(null)}
+  const delCard=cid=>{if(confirm('Delete this card?'))updDeck({cards:cards.filter(c=>c.id!==cid)})}
+  const toggleStar=cid=>updDeck({cards:cards.map(c=>c.id===cid?{...c,starred:!c.starred}:c)})
+
+  const filteredCards=useMemo(()=>{
+    let cs=[...cards]
+    if(cardFilter!=='all')cs=cs.filter(c=>c.masteryStatus===cardFilter)
+    if(cardQ)cs=cs.filter(c=>c.front.toLowerCase().includes(cardQ.toLowerCase())||c.back.toLowerCase().includes(cardQ.toLowerCase()))
+    return cs
+  },[cards,cardFilter,cardQ])
+
+  return(
+    <div className="max-w-4xl mx-auto px-4 py-6">
+      {/* back */}
+      <button onClick={()=>goTo({page:'decks'})} className="flex items-center gap-1.5 text-sm text-[#9ca3af] hover:text-[#6b7280] mb-4 transition-colors">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+        Decks
+      </button>
+
+      {/* deck header */}
+      <div className="bg-white border border-[#e5e2dc] rounded-2xl p-5 mb-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            {subj&&<SChip subj={subj}/>}
+            <h1 className="text-2xl font-bold text-[#1a1a1a] mt-1.5 mb-1">{deck.title}</h1>
+            {deck.description&&<p className="text-sm text-[#6b7280] mb-2">{deck.description}</p>}
+            <div className="flex items-center gap-3 text-xs text-[#9ca3af] flex-wrap">
+              <span>{cards.length} cards</span>
+              <span className="text-[#4a7c74]">{mastered} mastered</span>
+              <span className="text-[#d97706]">{learning} learning</span>
+              <span>{newC} new</span>
+              {deck.lastStudiedAt&&<span>Studied {fmtRel(deck.lastStudiedAt)}</span>}
+            </div>
+            <div className="mt-3"><PBar val={mastered} max={cards.length||1}/></div>
+          </div>
+          <div className="flex flex-col gap-2 flex-shrink-0">
+            <Btn onClick={()=>goTo({page:'study',deckId,mode:'flash'})} cls="whitespace-nowrap">▶ Study</Btn>
+            <div className="flex gap-1.5">
+              <Btn v="secondary" sz="sm" onClick={()=>setEdit(true)}>Edit</Btn>
+              <Btn v="secondary" sz="sm" onClick={()=>goTo({page:'import',deckId})}>Import</Btn>
+              <Btn v="danger" sz="sm" onClick={delDeck}>Delete</Btn>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* tabs */}
+      <div className="flex gap-1 bg-[#f0ede8] p-1 rounded-xl mb-5 w-fit">
+        {[['cards','Cards'],['progress','Progress'],['settings','Settings']].map(([id,l])=>(
+          <button key={id} onClick={()=>setTab(id)} className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab===id?'bg-white text-[#1a1a1a] shadow-sm':'text-[#6b7280] hover:text-[#1a1a1a]'}`}>{l}</button>
+        ))}
+      </div>
+
+      {/* cards tab */}
+      {tab==='cards'&&(
+        <div>
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+            <div className="flex-1"><SBar val={cardQ} onChange={setCQ} ph="Search cards…"/></div>
+            <div className="flex gap-2">
+              {[['all','All'],['new','New'],['learning','Learning'],['mastered','Mastered']].map(([v,l])=>(
+                <button key={v} onClick={()=>setCF(v)} className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${cardFilter===v?'bg-[#4a7c74] text-white':'bg-white border border-[#e5e2dc] text-[#6b7280] hover:bg-[#f0ede8]'}`}>{l}</button>
+              ))}
+            </div>
+            <Btn sz="sm" onClick={()=>setCE('new')}>+ Add Card</Btn>
+          </div>
+
+          {filteredCards.length===0
+            ?<Empty icon="🃏" title="No cards yet" desc="Add cards to start studying." action={<Btn sz="sm" onClick={()=>setCE('new')}>Add Card</Btn>}/>
+            :<div className="space-y-2">
+              {filteredCards.map(card=>(
+                <div key={card.id} className="bg-white border border-[#e5e2dc] rounded-xl px-4 py-3 flex items-start gap-3 group hover:border-[#4a7c74]/30 transition-colors">
+                  <div className="flex-1 min-w-0 grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs text-[#9ca3af] mb-0.5">Front</p>
+                      <p className="text-sm text-[#1a1a1a]">{card.front}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-[#9ca3af] mb-0.5">Back</p>
+                      <p className="text-sm text-[#6b7280]">{card.back}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <MBadge s={card.masteryStatus}/>
+                    <button onClick={()=>toggleStar(card.id)} className={`p-1 rounded transition-colors ${card.starred?'text-[#f59e0b]':'text-[#e5e2dc] hover:text-[#f59e0b]'}`}>
+                      <svg className="w-4 h-4" fill={card.starred?'currentColor':'none'} viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/></svg>
+                    </button>
+                    <button onClick={()=>setCE(card)} className="opacity-0 group-hover:opacity-100 text-[#9ca3af] hover:text-[#4a7c74] p-1 rounded transition-all">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg>
+                    </button>
+                    <button onClick={()=>delCard(card.id)} className="opacity-0 group-hover:opacity-100 text-[#9ca3af] hover:text-red-400 p-1 rounded transition-all">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          }
+        </div>
+      )}
+
+      {/* progress tab */}
+      {tab==='progress'&&(
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-4">
+            {[['New',newC,C.newBg,C.newClr],['Learning',learning,C.learningBg,C.learningClr],['Mastered',mastered,C.masteredBg,C.masteredClr]].map(([l,v,bg,clr])=>(
+              <div key={l} className="rounded-2xl p-4 text-center border" style={{background:bg,borderColor:clr+'33'}}>
+                <p className="text-3xl font-bold" style={{color:clr}}>{v}</p>
+                <p className="text-sm mt-0.5" style={{color:clr}}>{l}</p>
+              </div>
+            ))}
+          </div>
+          <div className="bg-white border border-[#e5e2dc] rounded-2xl p-5">
+            <p className="text-sm font-medium text-[#1a1a1a] mb-3">Overall mastery</p>
+            <PBar val={mastered} max={cards.length||1}/>
+            <p className="text-xs text-[#9ca3af] mt-2">{cards.length?`${Math.round(mastered/cards.length*100)}% complete`:'No cards yet'}</p>
+            {deck.lastStudiedAt&&<p className="text-xs text-[#9ca3af] mt-1">Last studied: {fmtRel(deck.lastStudiedAt)}</p>}
+          </div>
+          <button onClick={()=>{if(confirm('Reset all card progress to New?'))updDeck({cards:cards.map(c=>({...c,masteryStatus:'new',lastReviewedAt:null}))})}} className="text-sm text-red-400 hover:text-red-500 hover:underline">Reset progress</button>
+        </div>
+      )}
+
+      {/* settings tab */}
+      {tab==='settings'&&(
+        <div className="bg-white border border-[#e5e2dc] rounded-2xl p-5 space-y-4 max-w-sm">
+          <p className="text-sm font-semibold text-[#1a1a1a]">Deck Settings</p>
+          <Field label="Subject">
+            <select className={selectCls} value={deck.subjectId||''} onChange={e=>updDeck({subjectId:e.target.value})}>
+              <option value="">No subject</option>
+              {subjects.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </Field>
+          <Field label="Default front language">
+            <select className={selectCls} value={deck.defaultFrontLang||'en'} onChange={e=>updDeck({defaultFrontLang:e.target.value})}>
+              {[['en','English'],['zh-TW','Chinese (TW)'],['zh-CN','Chinese (CN)'],['ja','Japanese'],['ko','Korean'],['es','Spanish'],['fr','French'],['de','German']].map(([v,l])=><option key={v} value={v}>{l}</option>)}
+            </select>
+          </Field>
+          <Field label="Default back language">
+            <select className={selectCls} value={deck.defaultBackLang||'en'} onChange={e=>updDeck({defaultBackLang:e.target.value})}>
+              {[['en','English'],['zh-TW','Chinese (TW)'],['zh-CN','Chinese (CN)'],['ja','Japanese'],['ko','Korean'],['es','Spanish'],['fr','French'],['de','German']].map(([v,l])=><option key={v} value={v}>{l}</option>)}
+            </select>
+          </Field>
+        </div>
+      )}
+
+      {/* card editor drawer */}
+      {cardEditor!==null&&(
+        <CardEditorDrawer
+          card={cardEditor==='new'?null:cardEditor}
+          deck={deck}
+          onSave={(form,addNext)=>{
+            if(cardEditor==='new')addCard(form,addNext)
+            else editCard(cardEditor,form)
+          }}
+          onClose={()=>setCE(null)}
+        />
+      )}
+
+      {/* deck edit modal */}
+      {showEdit&&<DeckFormModal deck={deck} subjects={subjects} onSave={form=>{updDeck(form);setEdit(false)}} onClose={()=>setEdit(false)}/>}
+    </div>
+  )
+}
+
+/* ─── Study Session (/learn/decks/:id/study) ─────────────── */
+function StudyModePicker({deck,onPick,onBack}){
+  const cards=deck.cards||[]
+  const starred=cards.filter(c=>c.starred).length
+  const modes=[
+    {id:'flash',label:'Flashcards',desc:'Flip cards and self-assess',icon:'🃏'},
+    {id:'learn',label:'Learn',desc:'Mixed prompts with mastery buckets',icon:'🎯'},
+    {id:'write',label:'Write',desc:'Type the answer from memory',icon:'✍️'},
+    {id:'starred',label:'Starred Review',desc:`Review your ${starred} starred cards`,icon:'⭐',disabled:starred===0},
+  ]
+  return(
+    <div className="max-w-2xl mx-auto px-4 py-8">
+      <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-[#9ca3af] hover:text-[#6b7280] mb-6">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+        Back to {deck.title}
+      </button>
+      <h1 className="text-2xl font-bold text-[#1a1a1a] mb-1">Study</h1>
+      <p className="text-sm text-[#6b7280] mb-6">{deck.title} · {cards.length} cards</p>
+      <div className="grid grid-cols-2 gap-3">
+        {modes.map(m=>(
+          <button key={m.id} onClick={()=>!m.disabled&&onPick(m.id)} disabled={m.disabled} className={`bg-white border rounded-2xl p-5 text-left transition-all hover:border-[#4a7c74]/50 hover:shadow-sm disabled:opacity-40 disabled:cursor-not-allowed ${m.disabled?'border-[#e5e2dc]':'border-[#e5e2dc] hover:bg-[#f0f7f5]'}`}>
+            <div className="text-3xl mb-2">{m.icon}</div>
+            <p className="text-sm font-semibold text-[#1a1a1a]">{m.label}</p>
+            <p className="text-xs text-[#6b7280] mt-0.5">{m.desc}</p>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function SessionSummary({results,deck,onContinue,onBack,mode}){
+  const total=results.length
+  const correct=results.filter(r=>r.correct).length
+  const pct=total?Math.round(correct/total*100):0
+  const mastered=results.filter(r=>r.newStatus==='mastered').length
+  const learning=results.filter(r=>r.newStatus==='learning').length
+  return(
+    <div className="max-w-md mx-auto px-4 py-12 text-center">
+      <div className="text-5xl mb-4">{pct>=80?'🎉':pct>=50?'👍':'💪'}</div>
+      <h2 className="text-2xl font-bold text-[#1a1a1a] mb-1">Session Complete</h2>
+      <p className="text-sm text-[#6b7280] mb-8">{deck.title}</p>
+      <div className="bg-white border border-[#e5e2dc] rounded-2xl p-5 mb-6 grid grid-cols-3 gap-4 text-center">
+        <div><p className="text-2xl font-bold text-[#1a1a1a]">{total}</p><p className="text-xs text-[#9ca3af]">Cards studied</p></div>
+        <div><p className="text-2xl font-bold text-[#4a7c74]">{pct}%</p><p className="text-xs text-[#9ca3af]">Correct</p></div>
+        <div><p className="text-2xl font-bold text-[#d97706]">{total-correct}</p><p className="text-xs text-[#9ca3af]">To review</p></div>
+      </div>
+      {(mastered>0||learning>0)&&(
+        <div className="bg-[#f0f7f5] border border-[#4a7c74]/20 rounded-xl p-3.5 mb-6 text-sm text-[#4a7c74]">
+          {mastered>0&&<p>✅ {mastered} card{mastered>1?'s':''} mastered</p>}
+          {learning>0&&<p>📈 {learning} card{learning>1?'s':''} moved to learning</p>}
+        </div>
+      )}
+      <div className="flex gap-2 justify-center">
+        <Btn v="secondary" onClick={onBack}>Back to Deck</Btn>
+        <Btn onClick={onContinue}>Study Again</Btn>
+      </div>
+    </div>
+  )
+}
+
+function FlashcardMode({cards,deck,onUpdateCard,onUpdateDeck,onDone}){
+  const [pool,setPool]=useState(()=>[...cards])
+  const [idx,setIdx]=useState(0)
+  const [flipped,setFlipped]=useState(false)
+  const [shuffle,setShuffle]=useState(false)
+  const [results,setResults]=useState([])
+  const card=pool[idx]
+  const progress=pool.length?Math.round(idx/pool.length*100):0
+
+  const doShuffle=arr=>{const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]};return a}
+  const toggleShuffle=()=>{setShuffle(s=>{setPool(s?[...cards]:doShuffle([...cards]));return!s})}
+
+  const mark=(status)=>{
+    const now2=ts()
+    onUpdateCard(card.id,{masteryStatus:status,lastReviewedAt:now2})
+    setResults(r=>[...r,{id:card.id,correct:status==='mastered',newStatus:status}])
+    if(idx+1>=pool.length){onUpdateDeck({lastStudiedAt:now2});onDone(results.concat({id:card.id,correct:status==='mastered',newStatus:status}))}
+    else{setIdx(i=>i+1);setFlipped(false)}
+  }
+  const prev=()=>{if(idx>0){setIdx(i=>i-1);setFlipped(false)}}
+
+  if(!card)return<Empty icon="🃏" title="No cards" desc="Add cards to this deck first."/>
+  return(
+    <div className="max-w-2xl mx-auto px-4 py-6 flex flex-col min-h-[70vh]">
+      {/* progress */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between text-xs text-[#9ca3af] mb-1.5">
+          <span>{idx+1} / {pool.length}</span>
+          <span>{progress}%</span>
+        </div>
+        <PBar val={idx} max={pool.length||1}/>
+      </div>
+      {/* controls */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex gap-2">
+          <button onClick={toggleShuffle} className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${shuffle?'bg-[#4a7c74] text-white':'bg-white border border-[#e5e2dc] text-[#6b7280] hover:bg-[#f0ede8]'}`}>⇌ Shuffle</button>
+        </div>
+        <button onClick={()=>onUpdateCard(card.id,{starred:!card.starred})} className={`p-1.5 rounded-lg ${card.starred?'text-[#f59e0b]':'text-[#9ca3af] hover:text-[#f59e0b]'}`}>
+          <svg className="w-5 h-5" fill={card.starred?'currentColor':'none'} viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/></svg>
+        </button>
+      </div>
+      {/* card */}
+      <div className="flex-1 flex items-center justify-center mb-6">
+        <div className="w-full max-w-xl" style={{height:'240px'}}>
+          <div className="flip-wrap w-full h-full" onClick={()=>setFlipped(f=>!f)}>
+            <div className={`flip-inner w-full h-full ${flipped?'flipped':''}`}>
+              <div className="flip-front bg-white border-2 border-[#e5e2dc] rounded-2xl shadow-sm hover:border-[#4a7c74]/30">
+                <div className="text-center p-6">
+                  <p className="text-xs text-[#9ca3af] mb-3 uppercase tracking-wider">Front</p>
+                  <p className="text-xl font-medium text-[#1a1a1a] leading-relaxed">{card.front}</p>
+                </div>
+              </div>
+              <div className="flip-back bg-[#f0f7f5] border-2 border-[#4a7c74]/30 rounded-2xl shadow-sm">
+                <div className="text-center p-6">
+                  <p className="text-xs text-[#4a7c74] mb-3 uppercase tracking-wider">Back</p>
+                  <p className="text-xl font-medium text-[#1a1a1a] leading-relaxed">{card.back}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p className="text-center text-xs text-[#9ca3af] mb-4">{flipped?'How well did you know this?':'Click the card to flip'}</p>
+      {/* actions */}
+      {flipped&&(
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <button onClick={()=>mark('new')} className="py-2.5 rounded-xl text-sm font-medium bg-[#f3f4f6] text-[#6b7280] hover:bg-[#e5e7eb] transition-colors">Again</button>
+          <button onClick={()=>mark('learning')} className="py-2.5 rounded-xl text-sm font-medium bg-[#fef3c7] text-[#d97706] hover:bg-[#fde68a] transition-colors">Good</button>
+          <button onClick={()=>mark('mastered')} className="py-2.5 rounded-xl text-sm font-medium bg-[#f0f7f5] text-[#4a7c74] hover:bg-[#d1fae5] transition-colors">Mastered</button>
+        </div>
+      )}
+      <div className="flex gap-2 justify-center">
+        <Btn v="ghost" sz="sm" onClick={prev} disabled={idx===0}>← Prev</Btn>
+        <Btn v="ghost" sz="sm" onClick={()=>{setFlipped(false);setIdx(i=>Math.min(i+1,pool.length-1))}}>Next →</Btn>
+      </div>
+    </div>
+  )
+}
+
+function LearnMode({cards,deck,onUpdateCard,onUpdateDeck,onDone}){
+  const [pool,setPool]=useState(()=>[...cards].filter(c=>c.masteryStatus!=='mastered'))
+  const [idx,setIdx]=useState(0)
+  const [revealed,setRev]=useState(false)
+  const [results,setResults]=useState([])
+  const allCards=[...cards]
+
+  const card=pool[idx]
+  const progress=allCards.length?Math.round(results.length/allCards.length*100):0
+
+  const answer=(correct)=>{
+    const status=correct?'mastered':'learning'
+    const now2=ts()
+    onUpdateCard(card.id,{masteryStatus:status,lastReviewedAt:now2})
+    const newResults=[...results,{id:card.id,correct,newStatus:status}]
+    setResults(newResults)
+    const nextPool=correct?pool.filter((_,i)=>i!==idx):[...pool.filter((_,i)=>i!==idx),{...card,masteryStatus:'learning'}]
+    if(nextPool.length===0){onUpdateDeck({lastStudiedAt:now2});onDone(newResults)}
+    else{setPool(nextPool);setIdx(i=>i%nextPool.length);setRev(false)}
+  }
+
+  if(!card)return<SessionSummary results={results} deck={deck} onBack={()=>onDone(results)} onContinue={()=>onDone(results)} mode="learn"/>
+  return(
+    <div className="max-w-2xl mx-auto px-4 py-6">
+      <div className="mb-6">
+        <div className="flex justify-between text-xs text-[#9ca3af] mb-1.5">
+          <span>{results.length} of {allCards.length} done</span>
+          <span>{pool.length} remaining</span>
+        </div>
+        <PBar val={results.length} max={allCards.length||1}/>
+      </div>
+      <div className="bg-white border border-[#e5e2dc] rounded-2xl p-6 mb-4 min-h-[160px] flex flex-col justify-center">
+        <p className="text-xs text-[#9ca3af] uppercase tracking-wider mb-3">What is the answer?</p>
+        <p className="text-xl font-medium text-[#1a1a1a] leading-relaxed">{card.front}</p>
+        {revealed&&(
+          <div className="mt-4 pt-4 border-t border-[#f0ede8]">
+            <p className="text-xs text-[#4a7c74] uppercase tracking-wider mb-2">Answer</p>
+            <p className="text-lg text-[#1a1a1a] leading-relaxed">{card.back}</p>
+          </div>
+        )}
+      </div>
+      {!revealed
+        ?<div className="flex justify-center"><Btn onClick={()=>setRev(true)}>Show Answer</Btn></div>
+        :<div className="grid grid-cols-2 gap-3">
+          <button onClick={()=>answer(false)} className="py-3 rounded-2xl text-sm font-medium bg-[#fef2f2] text-red-500 hover:bg-[#fee2e2] transition-colors">✗ Still Learning</button>
+          <button onClick={()=>answer(true)} className="py-3 rounded-2xl text-sm font-medium bg-[#f0f7f5] text-[#4a7c74] hover:bg-[#d1fae5] transition-colors">✓ Got It</button>
+        </div>
+      }
+    </div>
+  )
+}
+
+function WriteMode({cards,deck,onUpdateCard,onUpdateDeck,onDone}){
+  const [idx,setIdx]=useState(0)
+  const [input,setInput]=useState('')
+  const [checked,setChecked]=useState(false)
+  const [results,setResults]=useState([])
+  const card=cards[idx]
+  if(!card){
+    const now2=ts();onUpdateDeck({lastStudiedAt:now2})
+    return<SessionSummary results={results} deck={deck} onBack={()=>onDone(results)} onContinue={()=>onDone(results)} mode="write"/>
+  }
+  const correct=input.trim().toLowerCase()===card.back.trim().toLowerCase()
+  const check=()=>{
+    if(!input.trim())return
+    setChecked(true)
+    onUpdateCard(card.id,{masteryStatus:correct?'mastered':'learning',lastReviewedAt:ts()})
+    setResults(r=>[...r,{id:card.id,correct,newStatus:correct?'mastered':'learning'}])
+  }
+  const next=()=>{setInput('');setChecked(false);setIdx(i=>i+1)}
+  const progress=Math.round(idx/cards.length*100)
+  return(
+    <div className="max-w-2xl mx-auto px-4 py-6">
+      <div className="mb-6">
+        <div className="flex justify-between text-xs text-[#9ca3af] mb-1.5"><span>{idx+1} / {cards.length}</span><span>{progress}%</span></div>
+        <PBar val={idx} max={cards.length||1}/>
+      </div>
+      <div className="bg-white border border-[#e5e2dc] rounded-2xl p-6 mb-4">
+        <p className="text-xs text-[#9ca3af] uppercase tracking-wider mb-3">Write the answer</p>
+        <p className="text-xl font-medium text-[#1a1a1a] mb-5">{card.front}</p>
+        <textarea
+          className={`w-full px-4 py-3 text-sm border rounded-xl focus:ring-1 focus:ring-[#4a7c74] focus:border-[#4a7c74] min-h-[90px] transition-colors ${checked?(correct?'border-[#4a7c74] bg-[#f0f7f5]':'border-red-300 bg-red-50'):inputCls}`}
+          value={input} onChange={e=>!checked&&setInput(e.target.value)}
+          placeholder="Type your answer…"
+          onKeyDown={e=>{if(e.key==='Enter'&&e.ctrlKey&&!checked)check()}}
+          readOnly={checked}
+        />
+        {checked&&(
+          <div className={`mt-3 p-3 rounded-xl text-sm ${correct?'bg-[#f0f7f5] text-[#4a7c74]':'bg-red-50 text-red-600'}`}>
+            {correct?'✓ Correct!':'✗ Incorrect — correct answer: '}
+            {!correct&&<span className="font-semibold">{card.back}</span>}
+          </div>
+        )}
+      </div>
+      {!checked
+        ?<div className="flex justify-center gap-2">
+          <Btn v="secondary" onClick={()=>{setChecked(true);setResults(r=>[...r,{id:card.id,correct:false,newStatus:'learning'}]);onUpdateCard(card.id,{masteryStatus:'learning',lastReviewedAt:ts()})}}>Reveal</Btn>
+          <Btn onClick={check} disabled={!input.trim()}>Check</Btn>
+        </div>
+        :<div className="flex justify-center"><Btn onClick={next}>{idx+1<cards.length?'Next →':'See Results'}</Btn></div>
+      }
+    </div>
+  )
+}
+
+function StudySession({deckId,initialMode,state,set,goTo}){
+  const deck=state.decks.find(d=>d.id===deckId)
+  const [mode,setMode]=useState(initialMode||null)
+  const [sessionDone,setDone]=useState(null)
+
+  if(!deck)return<div className="p-6 text-sm text-[#9ca3af]">Deck not found.</div>
+
+  const cards=deck.cards||[]
+  const studyCards=mode==='starred'?cards.filter(c=>c.starred):cards
+
+  const updCard=(cardId,data)=>set(s=>({...s,decks:s.decks.map(d=>d.id===deckId?{...d,cards:(d.cards||[]).map(c=>c.id===cardId?{...c,...data}:c)}:d)}))
+  const updDeck=data=>set(s=>({...s,decks:s.decks.map(d=>d.id===deckId?{...d,...data}:d)}))
+  const back=()=>goTo({page:'deck',deckId})
+
+  if(sessionDone)return<SessionSummary results={sessionDone} deck={deck} onBack={back} onContinue={()=>{setDone(null);setMode(null)}} mode={mode}/>
+  if(!mode)return<StudyModePicker deck={deck} onPick={setMode} onBack={back}/>
+
+  const modeHeader=(
+    <div className="max-w-2xl mx-auto px-4 pt-5 pb-2 flex items-center gap-3">
+      <button onClick={()=>setMode(null)} className="text-[#9ca3af] hover:text-[#6b7280]">
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+      <span className="text-sm font-medium text-[#6b7280]">{deck.title}</span>
+      <span className="ml-auto text-xs px-2.5 py-1 rounded-full bg-[#f0ede8] text-[#6b7280]">{mode==='flash'?'Flashcards':mode==='learn'?'Learn':mode==='write'?'Write':'Starred'}</span>
+    </div>
+  )
+
+  if(studyCards.length===0)return(
+    <div className="max-w-2xl mx-auto px-4 py-8">
+      {modeHeader}
+      <Empty icon="⭐" title="No cards to study" desc={mode==='starred'?'Star some cards first.':'Add cards to this deck.'} action={<Btn v="secondary" onClick={()=>setMode(null)}>Back</Btn>}/>
+    </div>
+  )
+
+  return(
+    <div>
+      {modeHeader}
+      {(mode==='flash'||mode==='starred')&&<FlashcardMode cards={studyCards} deck={deck} onUpdateCard={updCard} onUpdateDeck={updDeck} onDone={setDone}/>}
+      {mode==='learn'&&<LearnMode cards={studyCards} deck={deck} onUpdateCard={updCard} onUpdateDeck={updDeck} onDone={setDone}/>}
+      {mode==='write'&&<WriteMode cards={studyCards} deck={deck} onUpdateCard={updCard} onUpdateDeck={updDeck} onDone={setDone}/>}
+    </div>
+  )
+}
+
+/* ─── BulkImport (/learn/import) ─────────────────────────── */
+function BulkImport({state,set,goTo,targetDeckId}){
+  const {decks,subjects}=state
+  const [text,setText]=useState('')
+  const [tgt,setTgt]=useState(targetDeckId||'new')
+  const [newName,setNN]=useState('')
+  const [subjectId,setSub]=useState('')
+  const [parsed,setParsed]=useState([])
+  const [previewed,setPrev]=useState(false)
+  const [done,setDone]=useState(false)
+
+  const parseText=t=>{
+    const lines=t.split('\n').map(l=>l.trim()).filter(Boolean)
+    return lines.map(line=>{
+      const sep=line.includes('\t')?'\t':line.includes(';')?';':null
+      if(!sep)return{front:line,back:'',error:true}
+      const parts=line.split(sep)
+      return{front:(parts[0]||'').trim(),back:(parts.slice(1).join(sep)||'').trim(),error:false}
+    })
+  }
+
+  const preview=()=>{const p=parseText(text);setParsed(p);setPrev(true)}
+  const reset=()=>{setText('');setParsed([]);setPrev(false);setDone(false)}
+
+  const importCards=()=>{
+    const valid=parsed.filter(p=>!p.error&&p.front&&p.back)
+    if(!valid.length)return
+    if(tgt==='new'){
+      if(!newName.trim())return
+      const d={id:uid(),title:newName.trim(),description:'',subjectId,defaultFrontLang:'en',defaultBackLang:'en',
+        cards:valid.map((p,i)=>({id:uid(),front:p.front,back:p.back,frontLang:'en',backLang:'en',starred:false,order:i,masteryStatus:'new',lastReviewedAt:null,createdAt:ts(),updatedAt:ts()})),
+        createdAt:ts(),updatedAt:ts()}
+      set(s=>({...s,decks:[...s.decks,d]}))
+      setDone(true)
+      setTimeout(()=>goTo({page:'deck',deckId:d.id}),1200)
+    } else {
+      const target=decks.find(d=>d.id===tgt)
+      if(!target)return
+      const existing=target.cards||[]
+      const newCards=valid.map((p,i)=>({id:uid(),front:p.front,back:p.back,frontLang:'en',backLang:'en',starred:false,order:existing.length+i,masteryStatus:'new',lastReviewedAt:null,createdAt:ts(),updatedAt:ts()}))
+      set(s=>({...s,decks:s.decks.map(d=>d.id===tgt?{...d,cards:[...d.cards,...newCards],updatedAt:ts()}:d)}))
+      setDone(true)
+      setTimeout(()=>goTo({page:'deck',deckId:tgt}),1200)
+    }
+  }
+
+  const good=parsed.filter(p=>!p.error&&p.front&&p.back).length
+  const bad=parsed.filter(p=>p.error||!p.back).length
+
+  if(done)return(
+    <div className="max-w-md mx-auto px-4 py-16 text-center">
+      <div className="text-5xl mb-4">✅</div>
+      <h2 className="text-xl font-bold text-[#1a1a1a] mb-2">Import complete!</h2>
+      <p className="text-sm text-[#6b7280]">{good} cards imported. Redirecting…</p>
+    </div>
+  )
+
+  return(
+    <div className="max-w-5xl mx-auto px-4 py-6">
+      <div className="flex items-center gap-3 mb-5">
+        <button onClick={()=>goTo({page:'home'})} className="text-[#9ca3af] hover:text-[#6b7280]">
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+        </button>
+        <h1 className="text-2xl font-bold text-[#1a1a1a]">Bulk Import</h1>
+      </div>
+
+      {/* target deck */}
+      <div className="bg-white border border-[#e5e2dc] rounded-2xl p-5 mb-5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Field label="Import into">
+            <select className={selectCls} value={tgt} onChange={e=>setTgt(e.target.value)}>
+              <option value="new">Create new deck</option>
+              {decks.map(d=><option key={d.id} value={d.id}>{d.title} ({(d.cards||[]).length} cards)</option>)}
+            </select>
+          </Field>
+          {tgt==='new'&&(
+            <>
+              <Field label="New deck name">
+                <input className={inputCls} value={newName} onChange={e=>setNN(e.target.value)} placeholder="Enter deck name…"/>
+              </Field>
+              <Field label="Subject">
+                <select className={selectCls} value={subjectId} onChange={e=>setSub(e.target.value)}>
+                  <option value="">No subject</option>
+                  {subjects.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </Field>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* input col */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-semibold text-[#1a1a1a]">Paste cards</h2>
+            <p className="text-xs text-[#9ca3af]">Format: <code className="bg-[#f0ede8] px-1 rounded">front ; back</code> or tab-separated</p>
+          </div>
+          <textarea
+            className={`${inputCls} min-h-[320px] font-mono text-sm`}
+            value={text} onChange={e=>{setText(e.target.value);if(previewed){setPrev(false);setParsed([])}}}
+            placeholder={"apple ; 蘋果\ncat ; 貓\nhello\tworld\n..."}
+          />
+          <div className="flex gap-2 mt-3">
+            {previewed&&<Btn v="secondary" sz="sm" onClick={reset}>Reset</Btn>}
+            <Btn sz="sm" onClick={preview} disabled={!text.trim()} cls="flex-1">
+              {previewed?'Re-parse':'Preview'}
+            </Btn>
+          </div>
+        </div>
+
+        {/* preview col */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-semibold text-[#1a1a1a]">Preview</h2>
+            {previewed&&<div className="flex gap-3 text-xs">
+              <span className="text-[#4a7c74]">✓ {good} valid</span>
+              {bad>0&&<span className="text-red-400">✗ {bad} invalid</span>}
+            </div>}
+          </div>
+          {!previewed
+            ?<div className="bg-white border border-[#e5e2dc] rounded-xl min-h-[320px] flex items-center justify-center text-sm text-[#9ca3af]">Paste text and click Preview</div>
+            :<div className="bg-white border border-[#e5e2dc] rounded-xl overflow-hidden min-h-[320px] max-h-[400px] overflow-y-auto">
+              {parsed.length===0
+                ?<p className="p-4 text-sm text-[#9ca3af] text-center">No valid lines found.</p>
+                :parsed.map((row,i)=>(
+                  <div key={i} className={`flex gap-3 px-4 py-2.5 border-b border-[#f0ede8] last:border-0 text-sm ${row.error||!row.back?'bg-red-50':'hover:bg-[#f5f3ef]'}`}>
+                    <span className="text-[#9ca3af] text-xs w-5 text-right flex-shrink-0 pt-0.5">{i+1}</span>
+                    {row.error||!row.back
+                      ?<span className="text-red-400 flex-1">{row.front} <span className="text-xs">(missing separator)</span></span>
+                      :<><span className="flex-1 text-[#1a1a1a]">{row.front}</span><span className="text-[#e5e2dc] mx-1">→</span><span className="flex-1 text-[#6b7280]">{row.back}</span></>
+                    }
+                  </div>
+                ))}
+            </div>
+          }
+          {previewed&&good>0&&(
+            <div className="mt-3">
+              <Btn onClick={importCards} disabled={tgt==='new'&&!newName.trim()} cls="w-full">
+                Import {good} card{good>1?'s':''}
+              </Btn>
+              {tgt==='new'&&!newName.trim()&&<p className="text-xs text-[#9ca3af] mt-1.5 text-center">Enter a deck name above</p>}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ─── NoteList (/learn/notes) ────────────────────────────── */
+function NoteList({state,set,goTo}){
+  const {notes,subjects,decks}=state
+  const [q,setQ]=useState('')
+  const [fSubj,setFS]=useState('')
+  const sorted=[...notes].sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt))
+  const filtered=sorted.filter(n=>{
+    if(q&&!n.title.toLowerCase().includes(q.toLowerCase())&&!(n.content||'').toLowerCase().includes(q.toLowerCase()))return false
+    if(fSubj&&n.subjectId!==fSubj)return false
+    return true
+  })
+  const createNote=()=>{
+    const n={id:uid(),title:'',content:'',subjectId:'',linkedDeckId:'',linkedSessionId:'',createdAt:ts(),updatedAt:ts()}
+    set(s=>({...s,notes:[...s.notes,n]}))
+    goTo({page:'note',noteId:n.id})
+  }
+  return(
+    <div className="max-w-3xl mx-auto px-4 py-6">
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3">
+          <button onClick={()=>goTo({page:'home'})} className="text-[#9ca3af] hover:text-[#6b7280] p-1">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+          </button>
+          <h1 className="text-2xl font-bold text-[#1a1a1a]">Notes</h1>
+          <span className="text-sm text-[#9ca3af]">{notes.length}</span>
+        </div>
+        <Btn sz="sm" onClick={createNote}>+ New Note</Btn>
+      </div>
+      <div className="flex gap-3 mb-4">
+        <div className="flex-1"><SBar val={q} onChange={setQ} ph="Search notes…"/></div>
+      </div>
+      <div className="flex gap-2 flex-wrap mb-5">
+        <SChip subj={{id:'',name:'All',color:'#9ca3af'}} active={!fSubj} onClick={()=>setFS('')}/>
+        {subjects.map(s=><SChip key={s.id} subj={s} active={fSubj===s.id} onClick={()=>setFS(fSubj===s.id?'':s.id)}/>)}
+      </div>
+      {filtered.length===0
+        ?<Empty icon="📝" title={q||fSubj?'No results':'No notes yet'} desc="Study-linked notes keep knowledge organized." action={!q&&!fSubj&&<Btn sz="sm" onClick={createNote}>New Note</Btn>}/>
+        :<div className="space-y-2">
+          {filtered.map(n=><NoteCard key={n.id} note={n} subjects={subjects} decks={decks} onOpen={()=>goTo({page:'note',noteId:n.id})}/>)}
+        </div>
+      }
+    </div>
+  )
+}
+
+/* ─── NoteDetail (/learn/notes/:id) ──────────────────────── */
+function NoteDetail({noteId,state,set,goTo}){
+  const {subjects,decks}=state
+  const note=state.notes.find(n=>n.id===noteId)
+  const [form,setF]=useState(()=>note?{...note}:{title:'',content:'',subjectId:'',linkedDeckId:''})
+  const [saved,setSaved]=useState(true)
+  const saveTimer=useRef(null)
+
+  useEffect(()=>{
+    if(!note)return
+    setF({...note})
+  },[noteId])
+
+  const upd=k=>e=>{
+    const val=e.target.value
+    setF(f=>({...f,[k]:val}))
+    setSaved(false)
+    if(saveTimer.current)clearTimeout(saveTimer.current)
+    saveTimer.current=setTimeout(()=>{
+      set(s=>({...s,notes:s.notes.map(n=>n.id===noteId?{...n,[k]:val,updatedAt:ts()}:n)}))
+      setSaved(true)
+    },800)
+  }
+
+  const delNote=()=>{
+    if(confirm('Delete this note?')){
+      set(s=>({...s,notes:s.notes.filter(n=>n.id!==noteId)}))
+      goTo({page:'notes'})
+    }
+  }
+
+  if(!note)return(
+    <div className="max-w-3xl mx-auto px-4 py-8 text-center">
+      <p className="text-sm text-[#9ca3af]">Note not found.</p>
+      <Btn v="ghost" sz="sm" onClick={()=>goTo({page:'notes'})} cls="mt-2">Back to Notes</Btn>
+    </div>
+  )
+
+  const subj=subjects.find(s=>s.id===form.subjectId)
+  const linkedDeck=decks.find(d=>d.id===form.linkedDeckId)
+
+  return(
+    <div className="max-w-3xl mx-auto px-4 py-6">
+      {/* top bar */}
+      <div className="flex items-center justify-between mb-4">
+        <button onClick={()=>goTo({page:'notes'})} className="flex items-center gap-1.5 text-sm text-[#9ca3af] hover:text-[#6b7280]">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+          Notes
+        </button>
+        <div className="flex items-center gap-3">
+          <span className={`text-xs transition-colors ${saved?'text-[#9ca3af]':'text-[#d97706]'}`}>{saved?'Saved':'Saving…'}</span>
+          <Btn v="danger" sz="sm" onClick={delNote}>Delete</Btn>
+        </div>
+      </div>
+
+      {/* metadata */}
+      <div className="flex gap-3 mb-4 flex-wrap">
+        <select className={`${selectCls} text-xs w-auto`} value={form.subjectId} onChange={upd('subjectId')}>
+          <option value="">No subject</option>
+          {subjects.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
+        <select className={`${selectCls} text-xs w-auto`} value={form.linkedDeckId} onChange={upd('linkedDeckId')}>
+          <option value="">No linked deck</option>
+          {decks.map(d=><option key={d.id} value={d.id}>{d.title}</option>)}
+        </select>
+        {linkedDeck&&<button onClick={()=>goTo({page:'deck',deckId:linkedDeck.id})} className="text-xs text-[#4a7c74] hover:underline">→ Open {linkedDeck.title}</button>}
+      </div>
+
+      {/* title */}
+      <input
+        className="w-full text-2xl font-bold text-[#1a1a1a] bg-transparent border-none focus:outline-none placeholder-[#e5e2dc] mb-4"
+        value={form.title} onChange={upd('title')} placeholder="Untitled note…"
+      />
+
+      {/* content */}
+      <textarea
+        className="w-full min-h-[400px] text-sm text-[#1a1a1a] bg-transparent border-none focus:outline-none resize-none placeholder-[#9ca3af] leading-relaxed"
+        value={form.content} onChange={upd('content')} placeholder="Start writing…"
+      />
+
+      <p className="text-xs text-[#9ca3af] mt-3">Last edited {fmtRel(note.updatedAt)}</p>
+    </div>
+  )
+}
+
+/* ─── LearnPage router ────────────────────────────────────── */
+function LearnPage({store}){
+  const {state,set}=store
+  const [nav,setNav]=useState(()=>{
+    const ln=state.learnNav
+    return ln||{page:'home'}
+  })
+
+  const goTo=useCallback(dest=>{
+    setNav(dest)
+    set(s=>({...s,learnNav:dest}))
+    window.scrollTo({top:0,behavior:'smooth'})
+  },[set])
+
+  const props={state,set,goTo}
+
+  switch(nav.page){
+    case 'decks':   return <DeckList {...props}/>
+    case 'deck':    return <DeckDetail deckId={nav.deckId} {...props}/>
+    case 'study':   return <StudySession deckId={nav.deckId} initialMode={nav.mode} {...props}/>
+    case 'import':  return <BulkImport {...props} targetDeckId={nav.deckId}/>
+    case 'notes':   return <NoteList {...props}/>
+    case 'note':    return <NoteDetail noteId={nav.noteId} {...props}/>
+    default:        return <LearnHome {...props}/>
+  }
+}
+
+/* ─── stub pages ──────────────────────────────────────────── */
+function FocusPage({store}){
+  const {state,set}=store
+  const [running,setRun]=useState(false)
+  const [secs,setSecs]=useState(0)
+  const [goal,setGoal]=useState(25)
+  const timerRef=useRef(null)
+
+  useEffect(()=>{
+    if(running){
+      timerRef.current=setInterval(()=>setSecs(s=>s+1),1000)
+    } else clearInterval(timerRef.current)
+    return()=>clearInterval(timerRef.current)
+  },[running])
+
+  const mins=Math.floor(secs/60), s2=secs%60
+  const pct=Math.min(100,Math.round(secs/(goal*60)*100))
+
+  return(
+    <div className="max-w-lg mx-auto px-4 py-10 text-center">
+      <h1 className="text-3xl font-bold text-[#1a1a1a] mb-1">Focus</h1>
+      <p className="text-sm text-[#9ca3af] mb-10">Deep work timer</p>
+      <div className="relative w-48 h-48 mx-auto mb-8">
+        <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="44" fill="none" stroke="#f0ede8" strokeWidth="8"/>
+          <circle cx="50" cy="50" r="44" fill="none" stroke="#4a7c74" strokeWidth="8"
+            strokeDasharray={`${pct*2.76} 276`} strokeLinecap="round"/>
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <p className="text-3xl font-bold text-[#1a1a1a]">{String(mins).padStart(2,'0')}:{String(s2).padStart(2,'0')}</p>
+          <p className="text-xs text-[#9ca3af]">{pct}%</p>
+        </div>
+      </div>
+      <div className="flex items-center justify-center gap-2 mb-6">
+        <label className="text-sm text-[#6b7280]">Goal:</label>
+        <select className={`${selectCls} w-auto text-sm`} value={goal} onChange={e=>setGoal(+e.target.value)} disabled={running}>
+          {[10,15,20,25,30,45,60].map(m=><option key={m} value={m}>{m} min</option>)}
+        </select>
+      </div>
+      <div className="flex gap-3 justify-center">
+        <Btn v="secondary" onClick={()=>{setRun(false);setSecs(0)}}>Reset</Btn>
+        <Btn onClick={()=>setRun(r=>!r)}>{running?'Pause':'Start Focus'}</Btn>
+      </div>
+    </div>
+  )
+}
+
+function PlannerPage({store}){
+  const {state,set}=store
+  const tasks=state.tasks||[]
+  const [newTask,setNT]=useState('')
+  const add=()=>{if(!newTask.trim())return;set(s=>({...s,tasks:[...s.tasks,{id:uid(),text:newTask.trim(),done:false,createdAt:ts()}]}));setNT('')}
+  const toggle=id=>set(s=>({...s,tasks:s.tasks.map(t=>t.id===id?{...t,done:!t.done}:t)}))
+  const del=id=>set(s=>({...s,tasks:s.tasks.filter(t=>t.id!==id)}))
+  const pending=tasks.filter(t=>!t.done), done=tasks.filter(t=>t.done)
+  return(
+    <div className="max-w-lg mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold text-[#1a1a1a] mb-6">Plan</h1>
+      <div className="flex gap-2 mb-6">
+        <input className={`${inputCls} flex-1`} value={newTask} onChange={e=>setNT(e.target.value)} placeholder="Add a task…" onKeyDown={e=>e.key==='Enter'&&add()}/>
+        <Btn onClick={add} disabled={!newTask.trim()}>Add</Btn>
+      </div>
+      {pending.length>0&&<div className="space-y-2 mb-4">
+        {pending.map(t=>(
+          <div key={t.id} className="bg-white border border-[#e5e2dc] rounded-xl px-4 py-3 flex items-center gap-3 group">
+            <button onClick={()=>toggle(t.id)} className="w-4 h-4 rounded border-2 border-[#e5e2dc] hover:border-[#4a7c74] flex-shrink-0 transition-colors"/>
+            <span className="flex-1 text-sm text-[#1a1a1a]">{t.text}</span>
+            <button onClick={()=>del(t.id)} className="opacity-0 group-hover:opacity-100 text-[#9ca3af] hover:text-red-400 transition-all"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg></button>
+          </div>
+        ))}
+      </div>}
+      {done.length>0&&<div className="space-y-1.5">
+        <p className="text-xs text-[#9ca3af] mb-1.5">Completed ({done.length})</p>
+        {done.map(t=>(
+          <div key={t.id} className="flex items-center gap-3 px-4 py-2.5 rounded-xl group opacity-50">
+            <button onClick={()=>toggle(t.id)} className="w-4 h-4 rounded bg-[#4a7c74] border-2 border-[#4a7c74] flex-shrink-0"/>
+            <span className="flex-1 text-sm text-[#6b7280] line-through">{t.text}</span>
+            <button onClick={()=>del(t.id)} className="opacity-0 group-hover:opacity-100 text-[#9ca3af] hover:text-red-400 transition-all"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg></button>
+          </div>
+        ))}
+      </div>}
+      {tasks.length===0&&<Empty icon="📋" title="No tasks yet" desc="Add tasks to get organised."/>}
+    </div>
+  )
+}
+
+function StatsPage({store}){
+  const {state}=store
+  const sessions=state.sessions||[]
+  const decks=state.decks||[]
+  const totalCards=decks.reduce((n,d)=>n+(d.cards||[]).length,0)
+  const mastered=decks.reduce((n,d)=>n+(d.cards||[]).filter(c=>c.masteryStatus==='mastered').length,0)
+  const learning=decks.reduce((n,d)=>n+(d.cards||[]).filter(c=>c.masteryStatus==='learning').length,0)
+  return(
+    <div className="max-w-2xl mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold text-[#1a1a1a] mb-6">Stats</h1>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        {[['Decks',decks.length,'🗂'],['Total cards',totalCards,'🃏'],['Mastered',mastered,'✅'],['Learning',learning,'📈']].map(([l,v,ic])=>(
+          <div key={l} className="bg-white border border-[#e5e2dc] rounded-2xl p-4 text-center">
+            <p className="text-3xl font-bold text-[#1a1a1a]">{v}</p>
+            <p className="text-xs text-[#9ca3af] mt-1">{ic} {l}</p>
+          </div>
+        ))}
+      </div>
+      {decks.length>0&&(
+        <div>
+          <h2 className="text-sm font-semibold text-[#6b7280] uppercase tracking-wider mb-3">Deck Progress</h2>
+          <div className="space-y-3">
+            {decks.map(d=>{
+              const cs=d.cards||[]
+              const m=cs.filter(c=>c.masteryStatus==='mastered').length
+              return(
+                <div key={d.id} className="bg-white border border-[#e5e2dc] rounded-xl px-4 py-3">
+                  <div className="flex justify-between text-sm mb-1.5">
+                    <span className="font-medium text-[#1a1a1a]">{d.title}</span>
+                    <span className="text-[#9ca3af]">{cs.length?`${Math.round(m/cs.length*100)}%`:'0%'}</span>
+                  </div>
+                  <PBar val={m} max={cs.length||1}/>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function GroupsPage({store}){
+  return(
+    <div className="max-w-2xl mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold text-[#1a1a1a] mb-2">Groups</h1>
+      <p className="text-sm text-[#9ca3af] mb-8">Study groups and classes</p>
+      <Empty icon="👥" title="No groups yet" desc="Join or create a study group to collaborate with others."/>
+    </div>
+  )
+}
+
+/* ─── App shell ───────────────────────────────────────────── */
+const NAV=[
+  {id:'focus',label:'Focus',icon:<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>},
+  {id:'planner',label:'Plan',icon:<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>},
+  {id:'stats',label:'Stats',icon:<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>},
+  {id:'groups',label:'Groups',icon:<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/></svg>},
+  {id:'learn',label:'Learn',icon:<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>},
+]
+
+function App(){
+  const store=useStore()
+  const {state,nav}=store
+  const page=state.page||'learn'
+
+  const pages={
+    focus:<FocusPage store={store}/>,
+    planner:<PlannerPage store={store}/>,
+    stats:<StatsPage store={store}/>,
+    groups:<GroupsPage store={store}/>,
+    learn:<LearnPage store={store}/>,
+  }
+
+  return(
+    <div className="flex flex-col min-h-screen" style={{background:C.bg}}>
+      {/* main content */}
+      <main className="flex-1 pb-20 overflow-y-auto">
+        {pages[page]||pages.learn}
+      </main>
+
+      {/* bottom nav */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e5e2dc] z-30 safe-bottom">
+        <div className="flex items-center justify-around max-w-lg mx-auto px-2 py-1">
+          {NAV.map(item=>(
+            <button
+              key={item.id}
+              onClick={()=>store.nav(item.id)}
+              className={`nav-item ${page===item.id?'active':''}`}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
+    </div>
+  )
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>)
+</script>
+</body>
+</html>
