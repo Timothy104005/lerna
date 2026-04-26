@@ -22,6 +22,17 @@ const assetFiles = [
   "favicon.ico"
 ];
 
+function supabaseConfigScript() {
+  const url = String(process.env.LERNA_SUPABASE_URL || "").trim();
+  const anonKey = String(process.env.LERNA_SUPABASE_ANON_KEY || "").trim();
+  if (!url || !anonKey) return "";
+  return [
+    "<script>",
+    `      window.__LERNA_SUPABASE_CONFIG = ${JSON.stringify({ url, anonKey })};`,
+    "    </script>"
+  ].join("\n");
+}
+
 function cleanDir(dirPath) {
   fs.rmSync(dirPath, { recursive: true, force: true });
   fs.mkdirSync(dirPath, { recursive: true });
@@ -34,6 +45,7 @@ function copyFileRelative(from, to) {
 
 function buildMobileHtml() {
   const sourceHtml = fs.readFileSync(sourceHtmlPath, "utf8");
+  const configScript = supabaseConfigScript();
   const bridgeInjection = [
     "<script>",
     "      window.__YPT_PLATFORM__ = `android_app`;",
@@ -42,7 +54,15 @@ function buildMobileHtml() {
     '    <script type="module" src="./capacitor-bridge.js"></script>'
   ].join("\n");
 
-  const html = sourceHtml.replace(
+  let html = sourceHtml;
+  if (configScript) {
+    html = html.replace(
+      '<script src="./assets/lerna-cloud-sync.js"></script>',
+      `${configScript}\n    <script src="./assets/lerna-cloud-sync.js"></script>`
+    );
+  }
+
+  html = html.replace(
     '<script src="./assets/ypt-tools-react-v18.js"></script>',
     `<script src="./assets/ypt-tools-react-v18.js"></script>\n${bridgeInjection}`
   );

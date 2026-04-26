@@ -1,9 +1,10 @@
-const LERNA_CACHE = "lerna-v18-pwa-shell-v1";
+const LERNA_CACHE = "lerna-v18-pwa-shell-v3";
 const LERNA_ASSETS = [
   "./YPT++%20v18.html",
   "./assets/ypt-tools-v18.css",
   "./assets/ypt-tools-react-v18.js",
   "./assets/ypt-tools-graph-core-v18.js",
+  "./assets/lerna-cloud-sync.js",
   "./assets/lerna-mark.svg",
   "./assets/lerna-icon-192.png",
   "./assets/lerna-icon-512.png",

@@ -24,6 +24,17 @@ const assetFiles = [
   "favicon.ico"
 ];
 
+function supabaseConfigScript() {
+  const url = String(process.env.LERNA_SUPABASE_URL || "").trim();
+  const anonKey = String(process.env.LERNA_SUPABASE_ANON_KEY || "").trim();
+  if (!url || !anonKey) return "";
+  return [
+    "<script>",
+    `  window.__LERNA_SUPABASE_CONFIG = ${JSON.stringify({ url, anonKey })};`,
+    "</script>"
+  ].join("\n");
+}
+
 function cleanDir(dirPath) {
   fs.rmSync(dirPath, { recursive: true, force: true });
   fs.mkdirSync(dirPath, { recursive: true });
@@ -38,7 +49,20 @@ cleanDir(outputDir);
 fs.mkdirSync(outputAssetsDir, { recursive: true });
 
 for (const file of rootFiles) {
-  copyFile(path.join(rootDir, file), path.join(outputDir, file === "Lerna.html" ? "index.html" : file));
+  const outputFile = path.join(outputDir, file === "Lerna.html" ? "index.html" : file);
+  if (file !== "Lerna.html") {
+    copyFile(path.join(rootDir, file), outputFile);
+    continue;
+  }
+  const configScript = supabaseConfigScript();
+  let html = fs.readFileSync(path.join(rootDir, file), "utf8");
+  if (configScript) {
+    html = html.replace(
+      '<script src="./assets/lerna-cloud-sync.js"></script>',
+      `${configScript}\n    <script src="./assets/lerna-cloud-sync.js"></script>`
+    );
+  }
+  fs.writeFileSync(outputFile, html, "utf8");
 }
 
 for (const file of assetFiles) {

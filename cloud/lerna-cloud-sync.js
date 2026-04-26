@@ -12,6 +12,9 @@ import { createClient } from "@supabase/supabase-js";
   const CONFIG_KEY = "lerna_cloud_config_v1";
   const META_KEY = "lerna_cloud_meta_v1";
   const DEVICE_KEY = "lerna_cloud_device_id_v1";
+  const AUTH_KEY = "lerna_cloud_auth_v1";
+  const ACTIVE_USER_KEY = "lerna_cloud_active_user_v1";
+  const USER_PAYLOAD_PREFIX = "lerna_cloud_user_payload_v1:";
   const FALLBACK_ACCENT = "#4a7c74";
 
   let supabase = null;
@@ -37,6 +40,8 @@ import { createClient } from "@supabase/supabase-js";
       password: "Password",
       signIn: "登入",
       signUp: "註冊",
+      googleSignIn: "使用 Google 登入",
+      googleConfigMissing: "請先設定 Supabase 專案，才能使用 Google 登入。",
       signOut: "登出",
       sync: "智慧同步",
       upload: "上傳此裝置",
@@ -77,6 +82,8 @@ import { createClient } from "@supabase/supabase-js";
       password: "Password",
       signIn: "Sign in",
       signUp: "Create account",
+      googleSignIn: "Continue with Google",
+      googleConfigMissing: "Set up the Supabase project before using Google sign-in.",
       signOut: "Sign out",
       sync: "Smart sync",
       upload: "Upload this device",
@@ -188,6 +195,216 @@ import { createClient } from "@supabase/supabase-js";
     };
   }
 
+  function payloadHasData(payload) {
+    return !!(payload?.appState || payload?.aiState || payload?.v23State);
+  }
+
+  function payloadUserEmail(payload) {
+    const app = payload?.appState;
+    const state = app?.state || app || {};
+    return String(state?.user?.email || "").trim().toLowerCase();
+  }
+
+  function payloadBelongsToDifferentEmail(payload, user) {
+    const payloadEmail = payloadUserEmail(payload);
+    const authEmail = String(user?.email || "").trim().toLowerCase();
+    if (!payloadEmail || payloadEmail === "hello@lerna.app" || !authEmail) return false;
+    return payloadEmail !== authEmail;
+  }
+
+  function appProfileFromAuthUser(user) {
+    const email = String(user?.email || "").trim();
+    if (!email) return null;
+    const metadata = user.user_metadata || {};
+    return {
+      id: "u1",
+      name: metadata.full_name || metadata.name || email.split("@")[0],
+      email
+    };
+  }
+
+  function syncInAppProfileForUser(user, { createIfMissing = false } = {}) {
+    const profile = appProfileFromAuthUser(user);
+    if (!profile) return false;
+
+    const app = readJson(DATA_KEYS.appState);
+    if (!app) {
+      if (!createIfMissing) return false;
+      writeJson(DATA_KEYS.appState, {
+        user: profile,
+        page: "focus"
+      });
+      return true;
+    }
+
+    const state = app.state || app;
+    if (!state || typeof state !== "object") return false;
+    const localUser = state.user || {};
+    const localEmail = String(localUser.email || "").trim().toLowerCase();
+    const profileEmail = profile.email.toLowerCase();
+    const isDefault = !localEmail || localEmail === "hello@lerna.app";
+    const sameUser = localEmail === profileEmail;
+    if (!isDefault && !sameUser) return false;
+
+    const nextUser = {
+      id: localUser.id || profile.id,
+      name: localUser.name || profile.name,
+      email: profile.email
+    };
+    const changed =
+      !state.user ||
+      localUser.id !== nextUser.id ||
+      localUser.name !== nextUser.name ||
+      localUser.email !== nextUser.email ||
+      state.page === "auth";
+    if (!changed) return false;
+
+    state.user = nextUser;
+    if (state.page === "auth") state.page = "focus";
+    if (app.state) app.state = state;
+    writeJson(DATA_KEYS.appState, app);
+    return true;
+  }
+
+  function userPayloadKey(userId) {
+    return `${USER_PAYLOAD_PREFIX}${userId}`;
+  }
+
+  function readStoredAuthUser() {
+    const auth = readJson(AUTH_KEY);
+    const user =
+      auth?.user ||
+      auth?.currentSession?.user ||
+      auth?.session?.user ||
+      auth?.data?.session?.user ||
+      null;
+    if (!user?.id) return null;
+    return {
+      id: user.id,
+      email: user.email || user.user_metadata?.email || "",
+      user_metadata: user.user_metadata || {}
+    };
+  }
+
+  function readActiveUser() {
+    const active = readJson(ACTIVE_USER_KEY) || {};
+    if (active.userId) return active;
+    const meta = readMeta();
+    if (!meta.userId) return {};
+    return {
+      userId: meta.userId,
+      email: meta.email || ""
+    };
+  }
+
+  function writeActiveUser(user, reason = "unknown") {
+    if (!user?.id) return;
+    localStorage.setItem(ACTIVE_USER_KEY, JSON.stringify({
+      userId: user.id,
+      email: user.email || "",
+      activatedAt: new Date().toISOString(),
+      reason
+    }));
+  }
+
+  function readUserPayload(userId) {
+    if (!userId) return null;
+    const stored = readJson(userPayloadKey(userId));
+    return stored?.payload || null;
+  }
+
+  function saveUserPayload(user, payload = currentPayload(), reason = "unknown") {
+    const userId = user?.id || user?.userId;
+    if (!userId || !payloadHasData(payload)) return false;
+    localStorage.setItem(userPayloadKey(userId), JSON.stringify({
+      version: 1,
+      userId,
+      email: user.email || "",
+      savedAt: new Date().toISOString(),
+      reason,
+      payload
+    }));
+    return true;
+  }
+
+  function saveCurrentPayloadForActiveUser(reason = "unknown") {
+    const active = readActiveUser();
+    if (!active.userId) return false;
+    return saveUserPayload(active, currentPayload(), reason);
+  }
+
+  function clearPrimaryPayload() {
+    Object.values(DATA_KEYS).forEach((key) => localStorage.removeItem(key));
+  }
+
+  function applyPayloadToPrimaryStorage(payload) {
+    if (!payload) {
+      clearPrimaryPayload();
+      return;
+    }
+    writeJson(DATA_KEYS.appState, payload.appState ?? null);
+    writeJson(DATA_KEYS.aiState, payload.aiState ?? null);
+    writeJson(DATA_KEYS.v23State, payload.v23State ?? null);
+  }
+
+  function activateLocalUser(user, { reason = "unknown", reloadOnSwitch = false } = {}) {
+    if (!user?.id) return { switched: false };
+
+    const active = readActiveUser();
+    const previousUserId = active.userId || null;
+    const switched = !!previousUserId && previousUserId !== user.id;
+
+    if (switched) {
+      saveUserPayload(active, currentPayload(), `${reason}:previous-user`);
+      const storedPayload = readUserPayload(user.id);
+      applyPayloadToPrimaryStorage(storedPayload);
+      localStorage.removeItem(META_KEY);
+      try {
+        console.warn("[lerna-cloud] switched local account namespace", {
+          previousUserId,
+          nextUserId: user.id,
+          restoredSavedPayload: !!storedPayload
+        });
+      } catch {}
+      if (reloadOnSwitch) {
+        setTimeout(() => location.reload(), 250);
+      }
+    } else if (!previousUserId) {
+      const storedPayload = readUserPayload(user.id);
+      if (storedPayload) {
+        if (payloadHasData(currentPayload())) backupLocal();
+        applyPayloadToPrimaryStorage(storedPayload);
+      } else {
+        const current = currentPayload();
+        if (payloadBelongsToDifferentEmail(current, user)) {
+          backupLocal();
+          clearPrimaryPayload();
+          localStorage.removeItem(META_KEY);
+        }
+      }
+    }
+
+    writeActiveUser(user, reason);
+    return { switched };
+  }
+
+  function clearSignedOutUserData(reason = "sign-out") {
+    saveCurrentPayloadForActiveUser(reason);
+    clearPrimaryPayload();
+    localStorage.removeItem(META_KEY);
+    localStorage.removeItem(ACTIVE_USER_KEY);
+  }
+
+  function bootstrapAccountIsolation() {
+    const user = readStoredAuthUser();
+    if (user) {
+      activateLocalUser(user, { reason: "bootstrap" });
+      syncInAppProfileForUser(user, { createIfMissing: true });
+    }
+  }
+
+  bootstrapAccountIsolation();
+
   function readConfig() {
     const embedded = window.LERNA_SUPABASE_CONFIG || window.__LERNA_SUPABASE_CONFIG || {};
     const saved = readJson(CONFIG_KEY) || {};
@@ -269,12 +486,23 @@ import { createClient } from "@supabase/supabase-js";
     supabase.auth.onAuthStateChange((event, nextSession) => {
       session = nextSession;
       if (event === "SIGNED_IN" && nextSession?.user) {
-        handleUserSwitch(nextSession.user);
+        activateLocalUser(nextSession.user, {
+          reason: "auth-state",
+          reloadOnSwitch: true
+        });
+      } else if (event === "SIGNED_OUT") {
+        clearSignedOutUserData("auth-state-sign-out");
       }
       render();
     });
     supabase.auth.getSession().then(({ data }) => {
       session = data?.session || null;
+      if (session?.user) {
+        activateLocalUser(session.user, { reason: "session-restore" });
+        if (syncInAppProfileForUser(session.user, { createIfMissing: true })) {
+          setTimeout(() => location.reload(), 250);
+        }
+      }
       render();
     });
     return supabase;
@@ -287,6 +515,7 @@ import { createClient } from "@supabase/supabase-js";
     if (error) throw error;
     session = data?.session || null;
     if (!session?.user) throw new Error(t("authRequired"));
+    activateLocalUser(session.user, { reason: "require-session" });
     return { client, user: session.user };
   }
 
@@ -338,10 +567,12 @@ import { createClient } from "@supabase/supabase-js";
       if (error) throw error;
       writeMeta({
         userId: user.id,
+        email: user.email || null,
         lastSyncedHash: payloadHash,
         lastRemoteUpdatedAt: data?.updated_at || now,
         lastPushedAt: now
       });
+      saveUserPayload(user, payload, "manual-upload");
       conflict = null;
       setMessage(t("uploadOk"), "ok");
     } catch (error) {
@@ -371,10 +602,12 @@ import { createClient } from "@supabase/supabase-js";
     writeJson(DATA_KEYS.v23State, payload.v23State);
     writeMeta({
       userId: session?.user?.id || null,
+      email: session?.user?.email || null,
       lastSyncedHash: payloadHash,
       lastRemoteUpdatedAt: row.updated_at,
       lastPulledAt: new Date().toISOString()
     });
+    saveUserPayload(session?.user, payload, "manual-download");
     conflict = null;
     setMessage(`${t("downloadOk")} ${t("unsafeDownload")}`, "ok");
     if (reload) {
@@ -433,9 +666,11 @@ import { createClient } from "@supabase/supabase-js";
       }
       writeMeta({
         userId: user.id,
+        email: user.email || null,
         lastSyncedHash: remoteHash,
         lastRemoteUpdatedAt: remote.updated_at
       });
+      saveUserPayload(user, localPayload, "manual-sync-clean");
       conflict = null;
       setMessage(t("syncOk"), "ok");
     } catch (error) {
@@ -455,12 +690,19 @@ import { createClient } from "@supabase/supabase-js";
       const { data, error } = await client.auth.signInWithPassword({ email, password });
       if (error) throw error;
       session = data?.session || null;
+      if (session?.user) {
+        activateLocalUser(session.user, {
+          reason: "manual-sign-in",
+          reloadOnSwitch: true
+        });
+      }
       await ensureProfile(session?.user);
       // Auto-fill in-app profile from gmail when the local identity is still
       // the default `hello@lerna.app`. Reload so React state catches up.
       if (syncInAppProfileFromAuth()) {
         setTimeout(() => location.reload(), 600);
       }
+      setTimeout(() => autoSyncQuiet({ pull: true }), 700);
       setMessage(t("syncOk"), "ok");
     } catch (error) {
       setMessage(`${t("failed")}: ${error.message || error}`, "error");
@@ -479,8 +721,54 @@ import { createClient } from "@supabase/supabase-js";
       const { data, error } = await client.auth.signUp({ email, password });
       if (error) throw error;
       session = data?.session || session;
+      if ((data?.user || session?.user)?.id) {
+        activateLocalUser(data?.user || session.user, {
+          reason: "manual-sign-up",
+          reloadOnSwitch: true
+        });
+      }
       await ensureProfile(data?.user || session?.user);
+      setTimeout(() => autoSyncQuiet({ pull: true }), 700);
       setMessage(t("signingUp"), "ok");
+    } catch (error) {
+      setMessage(`${t("failed")}: ${error.message || error}`, "error");
+    } finally {
+      busy = false;
+      render();
+    }
+  }
+
+  function oauthRedirectTo() {
+    try {
+      const url = new URL(location.href);
+      url.hash = "";
+      return `${url.origin}${url.pathname}`;
+    } catch {
+      return location.href.split("#")[0];
+    }
+  }
+
+  async function signInWithGoogle() {
+    busy = true;
+    render();
+    try {
+      const client = initClient();
+      if (!client) {
+        open = true;
+        host.style.display = "";
+        setMessage(t("googleConfigMissing"), "warn");
+        return;
+      }
+      const { error } = await client.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: oauthRedirectTo(),
+          queryParams: {
+            prompt: "select_account"
+          }
+        }
+      });
+      if (error) throw error;
     } catch (error) {
       setMessage(`${t("failed")}: ${error.message || error}`, "error");
     } finally {
@@ -494,15 +782,15 @@ import { createClient } from "@supabase/supabase-js";
     render();
     try {
       const client = initClient();
+      const user = session?.user || readStoredAuthUser();
+      if (user?.id) {
+        saveUserPayload(user, currentPayload(), "manual-sign-out");
+      }
       await client?.auth.signOut();
       session = null;
-      // Intentionally do NOT clear META_KEY or app_state here — keeping
-      // meta.userId lets the next sign-in's user-switch check detect
-      // whether a *different* account is logging in on this device, and
-      // wipe local data if so (see handleUserSwitch). Without this,
-      // a different gmail signing in after sign-out would accidentally
-      // upload the previous user's local app_state to its own cloud row.
+      clearSignedOutUserData("manual-sign-out");
       setMessage("", "info");
+      setTimeout(() => location.reload(), 250);
     } catch (error) {
       setMessage(`${t("failed")}: ${error.message || error}`, "error");
     } finally {
@@ -521,25 +809,8 @@ import { createClient } from "@supabase/supabase-js";
   // when (and only when) the local profile is still the default. We never
   // overwrite a customised in-app email — that's a deliberate user choice.
   // Returns true iff localStorage was changed.
-  function syncInAppProfileFromAuth() {
-    if (!session?.user?.email) return false;
-    const app = readJson(DATA_KEYS.appState);
-    if (!app) return false;
-    const state = app.state || app;
-    if (!state || typeof state !== "object") return false;
-    const localUser = state.user || {};
-    const isDefault = !localUser.email || localUser.email === "hello@lerna.app";
-    if (!isDefault) return false;
-
-    const email = session.user.email;
-    state.user = {
-      id: localUser.id || "u1",
-      name: email.split("@")[0],
-      email
-    };
-    if (app.state) app.state = state;
-    writeJson(DATA_KEYS.appState, app);
-    return true;
+  function syncInAppProfileFromAuth(options = {}) {
+    return syncInAppProfileForUser(session?.user || readStoredAuthUser(), options);
   }
 
   const host = document.createElement("div");
@@ -631,6 +902,7 @@ import { createClient } from "@supabase/supabase-js";
     }
     .btn.primary { background: var(--cloud-accent); border-color: var(--cloud-accent); color:#fff; }
     .btn.soft { background: var(--cloud-soft); border-color: var(--cloud-border); color: var(--cloud-accent); }
+    .btn.google { background:#fff; border-color:#d1cec9; color:#1a1a1a; }
     .btn.danger { color:#b91c1c; border-color:#fecaca; background:#fef2f2; }
     .btn[disabled] { opacity:.55; cursor:not-allowed; }
     .status { border-radius:10px; padding:9px 10px; border:1px solid var(--cloud-line); color:var(--cloud-muted); background:#fff; margin-top:10px; white-space:pre-wrap; }
@@ -706,6 +978,7 @@ import { createClient } from "@supabase/supabase-js";
           <button class="btn primary" id="cloud-sign-in" ${busy ? "disabled" : ""}>${esc(t("signIn"))}</button>
           <button class="btn" id="cloud-sign-up" ${busy ? "disabled" : ""}>${esc(t("signUp"))}</button>
         </div>
+        <button class="btn google" id="cloud-google-sign-in" ${busy ? "disabled" : ""} style="width:100%;margin-top:10px">${esc(t("googleSignIn"))}</button>
       </div>
     ` : "";
 
@@ -771,6 +1044,7 @@ import { createClient } from "@supabase/supabase-js";
     panel.querySelector("#cloud-sign-up")?.addEventListener("click", () => {
       signUp(panel.querySelector("#cloud-email")?.value || "", panel.querySelector("#cloud-password")?.value || "");
     });
+    panel.querySelector("#cloud-google-sign-in")?.addEventListener("click", signInWithGoogle);
     panel.querySelector("#cloud-sign-out")?.addEventListener("click", signOut);
     panel.querySelector("#cloud-sync")?.addEventListener("click", smartSync);
     panel.querySelector("#cloud-upload")?.addEventListener("click", uploadLocal);
@@ -804,8 +1078,12 @@ import { createClient } from "@supabase/supabase-js";
   function isAutoMode() {
     const stored = localStorage.getItem(AUTO_KEY);
     if (stored === "false") return false;
+    const authUser = readStoredAuthUser();
+    if (!authUser?.id) return false;
     if (stored === "true") return true;
-    return !!readMeta().userId;
+    const meta = readMeta();
+    const active = readActiveUser();
+    return meta.userId === authUser.id || active.userId === authUser.id;
   }
 
   function isDebugShow() {
@@ -826,32 +1104,13 @@ import { createClient } from "@supabase/supabase-js";
     try {
       const { data } = await client.auth.getSession();
       session = data?.session || null;
+      if (session?.user) {
+        activateLocalUser(session.user, { reason: "active-session" });
+      }
       return session?.user || null;
     } catch {
       return null;
     }
-  }
-
-  // Multi-account safety: when a different Supabase user signs in on a device
-  // that already has another user's local app_state, we must wipe local data
-  // before the next sync. Otherwise the previous user's data would be uploaded
-  // to the new user's cloud row (smartSync sees localDirty=false because
-  // lastSyncedHash matches the *previous* user's last push).
-  function wipeLocalForUserSwitch(reason) {
-    try {
-      backupLocal(); // safety: preserve previous user's data under a timestamped key
-      Object.values(DATA_KEYS).forEach((key) => localStorage.removeItem(key));
-      localStorage.removeItem(META_KEY);
-      try { console.warn("[lerna-cloud] user switch detected, local wiped:", reason); } catch {}
-    } catch {}
-  }
-
-  function handleUserSwitch(newUser) {
-    const meta = readMeta();
-    if (!meta.userId) return;             // first sign-in on this device — nothing to clean
-    if (meta.userId === newUser.id) return; // same user resuming — keep local
-    wipeLocalForUserSwitch("prev=" + meta.userId + " new=" + newUser.id);
-    setTimeout(() => location.reload(), 250);
   }
 
   async function uploadLocalQuiet(user, payload, payloadHash) {
@@ -876,10 +1135,12 @@ import { createClient } from "@supabase/supabase-js";
     if (error) throw error;
     writeMeta({
       userId: user.id,
+      email: user.email || null,
       lastSyncedHash: payloadHash,
       lastRemoteUpdatedAt: data?.updated_at || now,
       lastPushedAt: now
     });
+    saveUserPayload(user, payload, "auto-upload");
   }
 
   function timeValue(value) {
@@ -896,6 +1157,7 @@ import { createClient } from "@supabase/supabase-js";
     writeJson(DATA_KEYS.v23State, payload.v23State);
     writeMeta({
       userId: user?.id || session?.user?.id || readMeta().userId || null,
+      email: user?.email || session?.user?.email || readMeta().email || null,
       lastSyncedHash: payloadHash,
       lastRemoteUpdatedAt: row.updated_at,
       lastPulledAt: new Date().toISOString()
@@ -903,6 +1165,7 @@ import { createClient } from "@supabase/supabase-js";
     // Apply in-app profile auto-fill before reload so post-reload UI shows
     // the cloud gmail rather than a freshly-pulled `hello@lerna.app`.
     syncInAppProfileFromAuth();
+    saveUserPayload(user || session?.user || readActiveUser(), payload, "auto-download");
     if (reload) {
       setTimeout(() => location.reload(), 400);
     }
@@ -920,14 +1183,16 @@ import { createClient } from "@supabase/supabase-js";
       // (e.g. if a refresh-token cycle restored a different session).
       const metaCheck = readMeta();
       if (metaCheck.userId && metaCheck.userId !== user.id) {
-        wipeLocalForUserSwitch("autoSync prev=" + metaCheck.userId + " new=" + user.id);
-        setTimeout(() => location.reload(), 250);
+        activateLocalUser(user, {
+          reason: "auto-sync-user-switch",
+          reloadOnSwitch: true
+        });
         return;
       }
 
       // Auto-fill in-app profile so the upload payload reflects the cloud
       // identity instead of leftover `hello@lerna.app`.
-      const profileChanged = syncInAppProfileFromAuth();
+      const profileChanged = syncInAppProfileFromAuth({ createIfMissing: pull });
       if (profileChanged && pull) {
         // On the boot pull tick, reload so the UI picks up the new profile
         // immediately rather than waiting for the next render cycle.
@@ -979,9 +1244,11 @@ import { createClient } from "@supabase/supabase-js";
       } else {
         writeMeta({
           userId: user.id,
+          email: user.email || null,
           lastSyncedHash: remoteHash,
           lastRemoteUpdatedAt: remote.updated_at
         });
+        saveUserPayload(user, localPayload, "auto-sync-clean");
       }
     } catch (error) {
       try { console.warn("[lerna-cloud] auto sync error:", error?.message || error); } catch {}
@@ -996,13 +1263,116 @@ import { createClient } from "@supabase/supabase-js";
     autoTriggersInstalled = true;
     setInterval(() => autoSyncQuiet({ pull: false }), AUTO_INTERVAL_MS);
     document.addEventListener("visibilitychange", () => {
-      if (document.hidden) autoSyncQuiet({ pull: false });
+      if (document.hidden) {
+        saveCurrentPayloadForActiveUser("visibility-hidden");
+        autoSyncQuiet({ pull: false });
+      }
     });
     window.addEventListener("pagehide", () => {
+      saveCurrentPayloadForActiveUser("pagehide");
       autoSyncQuiet({ pull: false });
     });
   }
   // ====================================================================
+
+  function ensureAuthBridgeStyles() {
+    if (document.getElementById("lerna-google-auth-bridge-style")) return;
+    const style = document.createElement("style");
+    style.id = "lerna-google-auth-bridge-style";
+    style.textContent = `
+      .lerna-google-auth-bridge {
+        display: grid;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .lerna-google-auth-button {
+        width: 100%;
+        min-height: 42px;
+        border: 1px solid #d1cec9;
+        border-radius: 10px;
+        background: #fff;
+        color: #1a1a1a;
+        font: inherit;
+        font-size: 14px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        cursor: pointer;
+        box-shadow: 0 1px 2px rgba(26, 26, 26, 0.04);
+      }
+      .lerna-google-auth-button:hover {
+        border-color: #4a7c74;
+      }
+      .lerna-google-auth-g {
+        width: 20px;
+        height: 20px;
+        border-radius: 999px;
+        border: 1px solid #e5e2dc;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        color: #4285f4;
+        background: #fff;
+      }
+      .lerna-google-auth-divider {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #9ca3af;
+        font-size: 11px;
+      }
+      .lerna-google-auth-divider::before,
+      .lerna-google-auth-divider::after {
+        content: "";
+        height: 1px;
+        flex: 1;
+        background: #e5e2dc;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function installAuthPageGoogleButton() {
+    if (!document.body) return;
+    ensureAuthBridgeStyles();
+    const forms = Array.from(document.querySelectorAll("form"));
+    const form = forms.find((candidate) =>
+      candidate.querySelector('input[type="email"]') &&
+      candidate.querySelector('input[type="password"]')
+    );
+    if (!form || form.querySelector("[data-lerna-google-auth-bridge]")) return;
+
+    const langCode = lang();
+    const bridge = document.createElement("div");
+    bridge.className = "lerna-google-auth-bridge";
+    bridge.dataset.lernaGoogleAuthBridge = "true";
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "lerna-google-auth-button";
+    button.innerHTML = `<span class="lerna-google-auth-g" aria-hidden="true">G</span><span>${esc(t("googleSignIn"))}</span>`;
+    button.addEventListener("click", signInWithGoogle);
+
+    const divider = document.createElement("div");
+    divider.className = "lerna-google-auth-divider";
+    divider.textContent = langCode === "zh" ? "或使用 email" : "or use email";
+
+    bridge.append(button, divider);
+    form.insertBefore(bridge, form.firstElementChild);
+  }
+
+  function setupAuthPageBridge() {
+    installAuthPageGoogleButton();
+    try {
+      new MutationObserver(() => installAuthPageGoogleButton()).observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    } catch {}
+  }
 
   window.__LernaCloudSync = {
     open: () => {
@@ -1013,6 +1383,12 @@ import { createClient } from "@supabase/supabase-js";
     sync: smartSync,
     upload: uploadLocal,
     download: downloadRemote,
+    signInWithGoogle,
+    getUser: () => session?.user || readStoredAuthUser(),
+    hasConfig: () => {
+      const config = readConfig();
+      return validUrl(config.url) && !!config.anonKey;
+    },
     autoSync: () => autoSyncQuiet({ pull: true }),
     setAuto: (on) => {
       if (on === false || on === "false") {
@@ -1038,6 +1414,7 @@ import { createClient } from "@supabase/supabase-js";
     } catch {}
 
     setupAutoTriggers();
+    setupAuthPageBridge();
     setTimeout(() => autoSyncQuiet({ pull: true }), 1500);
 
     window.addEventListener("hashchange", applyHostVisibility);

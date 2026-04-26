@@ -23,7 +23,7 @@
     <link rel="stylesheet" href="./assets/ypt-tools-v18.css" />
     <script src="./assets/ypt-tools-graph-core-v18.js"></script>
     <script src="./assets/ypt-tools-react-v18.js"></script>
-    <script src="./assets/lerna-cloud-sync.js" defer></script>
+    <script src="./assets/lerna-cloud-sync.js"></script>
     <style id="lerna-accent-overrides">
       /* ===== Custom accent colour system (v22) =====
          Users set `state.settings.accent` (hex). We mirror it onto :root as CSS vars,
@@ -15680,8 +15680,8 @@ Error generating stack: ` +
           : null;
       function ie({ lang: e, onSignIn: t, onToggleLang: n }) {
         let [r, i] = (0, l.useState)(`signin`),
-          [a, o] = (0, l.useState)(`hello@lerna.app`),
-          [s, c] = (0, l.useState)(`••••••••`),
+          [a, o] = (0, l.useState)(``),
+          [s, c] = (0, l.useState)(``),
           [u, d] = (0, l.useState)(``),
           [f, p] = (0, l.useState)(!1),
           [m, h] = (0, l.useState)(``),
@@ -15786,7 +15786,7 @@ Error generating stack: ` +
                             value: u,
                             onChange: (e) => d(e.target.value),
                             className: `w-full px-3 py-2.5 text-sm border border-[#d1cec9] rounded-lg bg-[#f5f3ef] text-[#1a1a1a] focus:outline-none focus:border-[#4a7c74] transition-colors`,
-                            placeholder: `Timothy`,
+                            placeholder: e === `zh` ? `你的名稱` : `Your name`,
                           }),
                         ],
                       }),
