@@ -41,3 +41,6 @@ test.txt
 test_write.txt
 test_v11.txt
 v11test.html
+
+# Claude Code internal state
+.claude/
