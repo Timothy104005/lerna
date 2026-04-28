@@ -16,6 +16,14 @@ desktop.ini
 # Logs
 *.log
 
+# Runtime / browser test artifacts
+tmp/
+tmp_edge_profile/
+tmp_edge_profile_verify/
+.tmp_npx_netlify_cache/
+output/
+_tmp_*.mjs
+
 # Node (if ever added)
 node_modules/
 .next/
