@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "description": "Android packaging and mobile build tooling for the Lerna study app.",
+  "workspaces": [
+    "apps/*",
+    "services/*",
+    "packages/*"
+  ],
   "scripts": {
     "build:cloud-sync": "node scripts/build-cloud-sync.js",
     "build:site": "npm run build:cloud-sync && node scripts/build-site.js",
@@ -19,7 +24,9 @@
     "android:gradle:debug": "powershell -NoProfile -Command \"Set-Location android; ./gradlew.bat assembleDebug\"",
     "android:gradle:aab": "powershell -NoProfile -Command \"Set-Location android; ./gradlew.bat bundleRelease\"",
     "android:build:debug": "npm run android:sync && npm run android:gradle:debug",
-    "android:build:aab": "npm run android:sync && npm run android:gradle:aab"
+    "android:build:aab": "npm run android:sync && npm run android:gradle:aab",
+    "dev": "turbo run dev",
+    "build": "turbo run build"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.0",
@@ -34,6 +41,7 @@
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.3.0",
-    "esbuild": "^0.28.0"
+    "esbuild": "^0.28.0",
+    "turbo": "^2"
   }
 }

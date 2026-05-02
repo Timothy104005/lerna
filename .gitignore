@@ -31,18 +31,32 @@ dist/
 build/
 coverage/
 
-# Android / Capacitor build outputs
+# Android / Capacitor build outputs (root + monorepo apps/mobile/)
 android/.gradle/
 android/.idea/
 android/local.properties
 android/app/build/
 android/captures/
 android/keystore.properties
+**/android/.gradle/
+**/android/.idea/
+**/android/local.properties
+**/android/app/build/
+**/android/captures/
+**/android/keystore.properties
 
 # Environment / secrets
 .env
 .env.local
 .env*.local
+
+# Turbo cache (W1 monorepo)
+.turbo/
+**/.turbo/
+
+# pnpm
+pnpm-debug.log*
+.pnpm-store/
 
 # Test scratch files
 test.txt

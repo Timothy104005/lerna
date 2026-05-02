@@ -1,0 +1,14 @@
+{
+  "name": "@lerna/web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "echo \"@lerna/web dev stub: Vite/React will be added in W4\"",
+    "build": "echo \"@lerna/web build stub: no build until W4\"",
+    "typecheck": "echo \"@lerna/web typecheck stub: no tsc until W4\"",
+    "lint": "echo \"@lerna/web lint stub: eslint will be added in W3\""
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
