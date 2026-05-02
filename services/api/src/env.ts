@@ -15,6 +15,8 @@ const envSchema = z.object({
 
   PORT: z.coerce.number().int().positive().default(8787),
 
+  SESSIONS_REPO: z.enum(['in-memory', 'drizzle']).default('in-memory'),
+
   CORS_ORIGINS: z.string().default('http://localhost:5173'),
 
   DATABASE_URL: z.string().url(),

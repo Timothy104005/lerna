@@ -9,9 +9,9 @@
 - **使用者（你）** — 在三者間搬運訊息、最後 commit
 
 ## 當前狀態
-- **本週**: W1（起手式）
-- **執行中**: 無（等使用者啟動 W1-T01）
-- **下一個 brief**: W1-T01 → W1-T02 → W2-T01（嚴格順序）
+- **本週**: W3（觀測性，OpenAPI / logging / errors）
+- **執行中**: W3-T01 brief 已寫好，待使用者放行給 ChatGPT/Codex
+- **下一個 brief**: W3-T01 OpenAPI → W3-T02 logging（pino + request id）→ W3-T03 problem+json 統一錯誤格式（嚴格順序，每件 vitest 全綠才放下一件）
 
 ## W1 起手式 ✅
 - [x] **W1-T01** monorepo scaffold — Codex Local + Claude 補修
@@ -24,11 +24,13 @@
 - [x] **W2-T01** API skeleton + /me — vitest 4 case 全綠
 - [x] **W2-T02** rate limit + CORS — vitest 3 case 全綠
 - [x] **W2-T03** sessions CRUD（in-memory repo）— vitest 7 case 全綠（總計 14/14）
-- [ ] **W2-T04** Drizzle Postgres repo + Supabase migration — `docs/AI_BRIEFS/W2-T04_drizzle_repo.md` — Codex Local
+- [x] **W2-T04** Drizzle Postgres repo + Supabase migration — vitest 5 case 全綠（總計 19/19）
+- [ ] **W2-T05** 真 Postgres / integration test — **跳序到 W10**（部署前再做）
 
-## W3 後端骨架（續）
-- [ ] W3-T01 OpenAPI spec 自動生成（待 brief）
-- [ ] W3-T02 logging + request id（待 brief）
+## W3 觀測性
+- [ ] **W3-T01** OpenAPI spec + Swagger UI — `docs/AI_BRIEFS/W3-T01_openapi.md` — Codex Local
+- [ ] W3-T02 logging + request id（pino，待 brief，等 W3-T01 vitest 全綠）
+- [ ] W3-T03 統一錯誤格式（problem+json，待 brief，等 W3-T02 vitest 全綠）
 
 ## W4-5 前端拆解（待規劃 brief）
 - [ ] 子任務先行記下：W4 拆出 apps/web 後，要更新 `netlify.toml` 與 `vercel.json` 的 buildCommand / outputDirectory 指向 monorepo 路徑（用 npm 不用 pnpm；Node 20）。Codex 在 W1 自作主張先改了一版，已退回。
@@ -57,6 +59,8 @@
 | 2026-05-02 | W2-T01 根因 | Read 發現 src/index.ts 被洗成 `export {};` —Codex hotfix regression #2 | — | Claude 還原 src/index.ts；W2-T02 brief 已寫好等 W2-T01 過後放行 |
 | 2026-05-02 | W2-T01 + W2-T02 收尾 | vitest 7/7 全綠、typecheck 無 error、npm install OK | — | 待清違規檔 + commit；W2-T03 brief 寫了 |
 | 2026-05-02 | W2-T03 收尾 | vitest 14/14 全綠、Codex 沒亂殺檔（do-not-touch 清單奏效）| 4 commits ahead of origin | 違規檔已退回；root .env.example 待 track |
+| 2026-05-02 | W2-T04 收尾 | vitest 19/19 全綠、do-not-touch 清單 13 檔奏效 | — | Drizzle repo + Supabase migration；default env 仍 in-memory |
+| 2026-05-03 | W3 接班 | Handover 讀畢、W3-T01 OpenAPI brief 已產出 | — | do-not-touch 清單 ~25 檔；新 dep 限 @hono/zod-openapi + @hono/swagger-ui |
 
 ## 不確定性 log
 | 不確定點 | 何時要解 | 負責人 |

@@ -26,7 +26,12 @@
 
 ## 已釋出（順序執行）
 - [x] W1-T01 monorepo scaffold
+- [x] W1-T01b hotfix
 - [x] W1-T02 CI pipeline (GitHub Actions)
 - [x] W2-T01 API skeleton + /me endpoint
+- [x] W2-T02 rate limit + CORS
+- [x] W2-T03 sessions CRUD（in-memory）
+- [x] W2-T04 Drizzle Postgres repo + Supabase migration
+- [ ] W3-T01 OpenAPI spec + Swagger UI（待 Codex 接手）
 
 未驗證：以下排程根據 `Lerna_執行手冊_v1.0.pdf` 抽樣推估，工時可能偏差。完成 W1 後重新校準。

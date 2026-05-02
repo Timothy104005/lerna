@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import type { Context } from 'hono'
-import { inMemorySessionsRepo } from '../repositories/in-memory-sessions-repo'
+import { sessionsRepo } from '../repositories'
 import { NewSessionSchema, UpdateSessionSchema } from '../types/session'
 import type { AuthEnv } from '../middleware/auth'
 
@@ -56,14 +56,14 @@ sessionsRoute.post('/', async (c) => {
   }
 
   const user = c.get('user')
-  const session = await inMemorySessionsRepo.create(user.sub, parsed.data)
+  const session = await sessionsRepo.create(user.sub, parsed.data)
 
   return c.json(session, 201)
 })
 
 sessionsRoute.get('/', async (c) => {
   const user = c.get('user')
-  const sessions = await inMemorySessionsRepo.list(user.sub)
+  const sessions = await sessionsRepo.list(user.sub)
 
   return c.json(sessions, 200)
 })
@@ -88,7 +88,7 @@ sessionsRoute.patch('/:id', async (c) => {
   }
 
   const user = c.get('user')
-  const updated = await inMemorySessionsRepo.update(user.sub, c.req.param('id'), parsed.data)
+  const updated = await sessionsRepo.update(user.sub, c.req.param('id'), parsed.data)
 
   if (!updated) {
     return c.json({ error: 'Not found' }, 404)
@@ -99,7 +99,7 @@ sessionsRoute.patch('/:id', async (c) => {
 
 sessionsRoute.delete('/:id', async (c) => {
   const user = c.get('user')
-  const deleted = await inMemorySessionsRepo.delete(user.sub, c.req.param('id'))
+  const deleted = await sessionsRepo.delete(user.sub, c.req.param('id'))
 
   if (!deleted) {
     return c.json({ error: 'Not found' }, 404)
