@@ -6,6 +6,7 @@ import { apiCors } from './middleware/cors'
 import { ipRateLimit } from './middleware/rate-limit'
 import { healthzRoute } from './routes/healthz'
 import { meRoute } from './routes/me'
+import { sessionsRoute } from './routes/sessions'
 
 export const app = new Hono<AuthEnv>()
 
@@ -19,6 +20,10 @@ app.route('/healthz', healthzRoute)
 app.use('/me', authMiddleware)
 app.use('/me/*', authMiddleware)
 app.route('/me', meRoute)
+
+app.use('/sessions', authMiddleware)
+app.use('/sessions/*', authMiddleware)
+app.route('/sessions', sessionsRoute)
 
 if (env.NODE_ENV !== 'test') {
   serve(
