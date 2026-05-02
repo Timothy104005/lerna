@@ -23,8 +23,8 @@
 ## W2 後端骨架
 - [x] **W2-T01** API skeleton + /me — vitest 4 case 全綠
 - [x] **W2-T02** rate limit + CORS — vitest 3 case 全綠
-- [ ] **W2-T03** sessions endpoint（CRUD，先用 in-memory repo）— `docs/AI_BRIEFS/W2-T03_sessions_endpoints.md` — Codex Local
-- [ ] W2-T04 Drizzle migration + 接真 Postgres（把 in-memory repo 換掉）（待 brief）
+- [x] **W2-T03** sessions CRUD（in-memory repo）— vitest 7 case 全綠（總計 14/14）
+- [ ] **W2-T04** Drizzle Postgres repo + Supabase migration — `docs/AI_BRIEFS/W2-T04_drizzle_repo.md` — Codex Local
 
 ## W3 後端骨架（續）
 - [ ] W3-T01 OpenAPI spec 自動生成（待 brief）
@@ -56,6 +56,7 @@
 | 2026-05-02 | W2-T01 vitest 第一回 | 4 case 全紅，`app` undefined | — | Claude 修 vitest.config + setup file + 改 static import，仍紅 |
 | 2026-05-02 | W2-T01 根因 | Read 發現 src/index.ts 被洗成 `export {};` —Codex hotfix regression #2 | — | Claude 還原 src/index.ts；W2-T02 brief 已寫好等 W2-T01 過後放行 |
 | 2026-05-02 | W2-T01 + W2-T02 收尾 | vitest 7/7 全綠、typecheck 無 error、npm install OK | — | 待清違規檔 + commit；W2-T03 brief 寫了 |
+| 2026-05-02 | W2-T03 收尾 | vitest 14/14 全綠、Codex 沒亂殺檔（do-not-touch 清單奏效）| 4 commits ahead of origin | 違規檔已退回；root .env.example 待 track |
 
 ## 不確定性 log
 | 不確定點 | 何時要解 | 負責人 |
