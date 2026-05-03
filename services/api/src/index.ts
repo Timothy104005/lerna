@@ -3,6 +3,8 @@ import { swaggerUI } from '@hono/swagger-ui'
 import { env } from './env'
 import { authMiddleware } from './middleware/auth'
 import { apiCors } from './middleware/cors'
+import { requestIdMiddleware } from './middleware/request-id'
+import { loggingMiddleware } from './middleware/logging'
 import { ipRateLimit } from './middleware/rate-limit'
 import { createOpenApiHono } from './openapi/app'
 import { healthzRoute } from './routes/healthz'
@@ -12,6 +14,8 @@ import { sessionsRoute } from './routes/sessions'
 export const app = createOpenApiHono()
 
 app.use('*', apiCors)
+app.use('*', requestIdMiddleware)
+app.use('*', loggingMiddleware)
 app.use('*', ipRateLimit)
 
 // Public routes
