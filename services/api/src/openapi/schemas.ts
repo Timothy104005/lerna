@@ -1,6 +1,10 @@
 import { extendZodWithOpenApi } from '@hono/zod-openapi'
 import { z } from 'zod'
 import {
+  ProblemResponseSchema,
+  ValidationProblemSchema
+} from './problem-schemas'
+import {
   NewSessionSchema,
   SessionSchema,
   UpdateSessionSchema
@@ -43,30 +47,10 @@ export const MeResponseSchema = z
   })
   .openapi('MeResponse')
 
-export const ValidationErrorResponseSchema = z
-  .object({
-    error: z.literal('Invalid request'),
-    details: z.object({
-      formErrors: z.array(z.string()),
-      fieldErrors: z.record(z.array(z.string()))
-    })
-  })
-  .openapi('ValidationErrorResponse')
+export const ValidationErrorResponseSchema = ValidationProblemSchema
 
-export const UnauthorizedResponseSchema = z
-  .object({
-    error: z.literal('Unauthorized')
-  })
-  .openapi('UnauthorizedResponse')
+export const UnauthorizedResponseSchema = ProblemResponseSchema
 
-export const NotFoundResponseSchema = z
-  .object({
-    error: z.literal('Not found')
-  })
-  .openapi('NotFoundResponse')
+export const NotFoundResponseSchema = ProblemResponseSchema
 
-export const RateLimitResponseSchema = z
-  .object({
-    error: z.literal('Too Many Requests')
-  })
-  .openapi('RateLimitResponse')
+export const RateLimitResponseSchema = ProblemResponseSchema

@@ -10,7 +10,7 @@
 
 ## 當前狀態
 - **本週**: W3（觀測性，OpenAPI / logging / errors）
-- **執行中**: 無；等放行 W3-T02
+- **執行中**: W3-T02 brief 已寫好，待使用者放行給 ChatGPT/Codex
 - **下一個 brief**: W3-T02 logging（pino + request id）→ W3-T03 problem+json 統一錯誤格式（嚴格順序，每件 vitest 全綠才放下一件）
 
 ## W1 起手式 ✅
@@ -29,8 +29,8 @@
 
 ## W3 觀測性
 - [x] **W3-T01** OpenAPI spec + Swagger UI — vitest 19/19 全綠，/openapi.json 200、/docs 200
-- [ ] W3-T02 logging + request id（pino，待 brief）
-- [ ] W3-T03 統一錯誤格式（problem+json，待 brief，等 W3-T02 vitest 全綠）
+- [x] **W3-T02** logging + request id — vitest 19/19 全綠，pino test silent / dev pretty / prod JSON
+- [ ] **W3-T03** 統一錯誤格式（problem+json）— `docs/AI_BRIEFS/W3-T03_problem_json.md` — Codex Local
 
 ## W4-5 前端拆解（待規劃 brief）
 - [ ] 子任務先行記下：W4 拆出 apps/web 後，要更新 `netlify.toml` 與 `vercel.json` 的 buildCommand / outputDirectory 指向 monorepo 路徑（用 npm 不用 pnpm；Node 20）。Codex 在 W1 自作主張先改了一版，已退回。

@@ -18,19 +18,42 @@ describe('rate limit and CORS middleware', () => {
       const res = await app.request('/me', { headers })
 
       expect(res.status).toBe(401)
+      expect(res.headers.get('content-type')).toContain('application/problem+json')
+      const body = await res.json()
+      expect(body).toMatchObject({
+        type: 'https://lerna.app/problems/unauthorized',
+        title: 'Unauthorized',
+        status: 401
+      })
     }
 
     const limitedRes = await app.request('/me', { headers })
-    const limitedBody = await limitedRes.json()
 
     expect(limitedRes.status).toBe(429)
-    expect(limitedBody).toEqual({ error: 'Too Many Requests' })
+    expect(limitedRes.headers.get('content-type')).toContain(
+      'application/problem+json'
+    )
+    const limitedBody = await limitedRes.json()
+    expect(limitedBody).toMatchObject({
+      type: 'https://lerna.app/problems/too-many-requests',
+      title: 'Too Many Requests',
+      status: 429
+    })
 
     vi.advanceTimersByTime(60 * 1000)
 
     const resetRes = await app.request('/me', { headers })
 
     expect(resetRes.status).toBe(401)
+    expect(resetRes.headers.get('content-type')).toContain(
+      'application/problem+json'
+    )
+    const resetBody = await resetRes.json()
+    expect(resetBody).toMatchObject({
+      type: 'https://lerna.app/problems/unauthorized',
+      title: 'Unauthorized',
+      status: 401
+    })
   })
 
   it('returns CORS headers for allowed origins and omits them for disallowed origins', async () => {

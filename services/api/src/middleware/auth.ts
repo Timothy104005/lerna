@@ -1,6 +1,7 @@
 import type { MiddlewareHandler } from 'hono'
 import { verify } from 'hono/jwt'
 import { env } from '../env'
+import { unauthorized } from '../lib/problem'
 
 export type AuthUser = {
   sub: string
@@ -33,10 +34,6 @@ function extractBearerToken(authorizationHeader: string | undefined): string | n
   }
 
   return token
-}
-
-function unauthorized(c: Parameters<MiddlewareHandler<AuthEnv>>[0]) {
-  return c.json({ error: 'Unauthorized' }, 401)
 }
 
 export const authMiddleware: MiddlewareHandler<AuthEnv> = async (c, next) => {

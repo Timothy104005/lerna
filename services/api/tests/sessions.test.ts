@@ -95,11 +95,22 @@ describe('sessions routes', () => {
     })
 
     expect(response.status).toBe(400)
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json'
+    )
 
     const body = await response.json()
 
-    expect(body.error).toBe('Invalid request')
-    expect(body.details.fieldErrors.subject).toBeDefined()
+    expect(body).toMatchObject({
+      type: 'https://lerna.app/problems/validation',
+      title: 'Invalid request',
+      status: 400
+    })
+    expect(body.errors).toMatchObject({
+      fieldErrors: expect.any(Object),
+      formErrors: expect.any(Array)
+    })
+    expect(body.errors.fieldErrors.subject).toBeDefined()
   })
 
   it('GET /sessions only lists sessions owned by the authenticated user', async () => {
@@ -199,10 +210,17 @@ describe('sessions routes', () => {
     })
 
     expect(response.status).toBe(404)
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json'
+    )
 
     const body = await response.json()
 
-    expect(body).toEqual({ error: 'Not found' })
+    expect(body).toMatchObject({
+      type: 'https://lerna.app/problems/not-found',
+      title: 'Not found',
+      status: 404
+    })
   })
 
   it('DELETE /sessions/:id deletes an owned session', async () => {
@@ -247,10 +265,17 @@ describe('sessions routes', () => {
     })
 
     expect(deleteResponse.status).toBe(404)
+    expect(deleteResponse.headers.get('content-type')).toContain(
+      'application/problem+json'
+    )
 
     const deleteBody = await deleteResponse.json()
 
-    expect(deleteBody).toEqual({ error: 'Not found' })
+    expect(deleteBody).toMatchObject({
+      type: 'https://lerna.app/problems/not-found',
+      title: 'Not found',
+      status: 404
+    })
 
     const listResponse = await app.request('/sessions', {
       method: 'GET',

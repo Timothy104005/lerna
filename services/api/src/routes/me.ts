@@ -22,7 +22,7 @@ const getMeRoute = createRoute({
     401: {
       description: 'Missing or invalid bearer token',
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: UnauthorizedResponseSchema
         }
       }
@@ -30,7 +30,7 @@ const getMeRoute = createRoute({
     429: {
       description: 'Rate limit exceeded',
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: RateLimitResponseSchema
         }
       }

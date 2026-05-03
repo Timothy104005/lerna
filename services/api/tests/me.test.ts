@@ -15,20 +15,30 @@ describe('api routes', () => {
 
   it('GET /me without token returns 401', async () => {
     const res = await app.request('/me')
-    const body = await res.json()
 
     expect(res.status).toBe(401)
-    expect(body).toEqual({ error: 'Unauthorized' })
+    expect(res.headers.get('content-type')).toContain('application/problem+json')
+    const body = await res.json()
+    expect(body).toMatchObject({
+      type: 'https://lerna.app/problems/unauthorized',
+      title: 'Unauthorized',
+      status: 401
+    })
   })
 
   it('GET /me with invalid token returns 401', async () => {
     const res = await app.request('/me', {
       headers: { Authorization: 'Bearer invalid.jwt.token' }
     })
-    const body = await res.json()
 
     expect(res.status).toBe(401)
-    expect(body).toEqual({ error: 'Unauthorized' })
+    expect(res.headers.get('content-type')).toContain('application/problem+json')
+    const body = await res.json()
+    expect(body).toMatchObject({
+      type: 'https://lerna.app/problems/unauthorized',
+      title: 'Unauthorized',
+      status: 401
+    })
   })
 
   it('GET /me with valid token returns 200', async () => {

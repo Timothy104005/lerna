@@ -1,4 +1,5 @@
 import { rateLimiter } from 'hono-rate-limiter'
+import { tooManyRequests } from '../lib/problem'
 import type { AuthEnv } from './auth'
 
 export const ipRateLimit = rateLimiter<AuthEnv>({
@@ -6,6 +7,5 @@ export const ipRateLimit = rateLimiter<AuthEnv>({
   limit: 60,
   keyGenerator: (c) => c.req.header('x-forwarded-for') ?? 'unknown',
   skip: (c) => c.req.path === '/healthz',
-  message: { error: 'Too Many Requests' },
-  statusCode: 429
+  handler: (c) => tooManyRequests(c)
 })

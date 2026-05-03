@@ -1,5 +1,10 @@
 import { createRoute } from '@hono/zod-openapi'
-import type { Context, MiddlewareHandler, TypedResponse } from 'hono'
+import type { Context, MiddlewareHandler } from 'hono'
+import {
+  invalidJsonBody,
+  notFound,
+  validationFailed
+} from '../lib/problem'
 import type { AuthEnv } from '../middleware/auth'
 import { createOpenApiHono } from '../openapi/app'
 import {
@@ -16,21 +21,11 @@ import {
 import { sessionsRepo } from '../repositories'
 import { NewSessionSchema, UpdateSessionSchema } from '../types/session'
 
-type ValidationErrorBody = {
-  error: 'Invalid request'
-  details: {
-    formErrors: string[]
-    fieldErrors: Record<string, string[]>
-  }
-}
-
-type ValidationErrorJsonResponse = TypedResponse<ValidationErrorBody, 400, 'json'>
-
 type JsonBodyResult =
   | { ok: true; body: unknown }
   | {
       ok: false
-      response: ValidationErrorJsonResponse
+      response: ReturnType<typeof invalidJsonBody>
     }
 
 async function readJsonBody(c: Context<AuthEnv>): Promise<JsonBodyResult> {
@@ -40,17 +35,9 @@ async function readJsonBody(c: Context<AuthEnv>): Promise<JsonBodyResult> {
       body: await c.req.json()
     }
   } catch {
-    const body: ValidationErrorBody = {
-      error: 'Invalid request',
-      details: {
-        formErrors: ['Invalid JSON body'],
-        fieldErrors: {}
-      }
-    }
-
     return {
       ok: false,
-      response: c.json(body, 400)
+      response: invalidJsonBody(c)
     }
   }
 }
@@ -92,7 +79,7 @@ const createSessionRoute = createRoute({
     400: {
       description: 'Invalid request body',
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: ValidationErrorResponseSchema
         }
       }
@@ -100,7 +87,7 @@ const createSessionRoute = createRoute({
     401: {
       description: 'Missing or invalid bearer token',
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: UnauthorizedResponseSchema
         }
       }
@@ -108,7 +95,7 @@ const createSessionRoute = createRoute({
     429: {
       description: 'Rate limit exceeded',
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: RateLimitResponseSchema
         }
       }
@@ -132,7 +119,7 @@ const listSessionsRoute = createRoute({
     401: {
       description: 'Missing or invalid bearer token',
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: UnauthorizedResponseSchema
         }
       }
@@ -140,7 +127,7 @@ const listSessionsRoute = createRoute({
     429: {
       description: 'Rate limit exceeded',
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: RateLimitResponseSchema
         }
       }
@@ -176,7 +163,7 @@ const updateSessionRoute = createRoute({
     400: {
       description: 'Invalid request body',
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: ValidationErrorResponseSchema
         }
       }
@@ -184,7 +171,7 @@ const updateSessionRoute = createRoute({
     401: {
       description: 'Missing or invalid bearer token',
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: UnauthorizedResponseSchema
         }
       }
@@ -192,7 +179,7 @@ const updateSessionRoute = createRoute({
     404: {
       description: 'Session not found',
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: NotFoundResponseSchema
         }
       }
@@ -200,7 +187,7 @@ const updateSessionRoute = createRoute({
     429: {
       description: 'Rate limit exceeded',
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: RateLimitResponseSchema
         }
       }
@@ -222,7 +209,7 @@ const deleteSessionRoute = createRoute({
     401: {
       description: 'Missing or invalid bearer token',
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: UnauthorizedResponseSchema
         }
       }
@@ -230,7 +217,7 @@ const deleteSessionRoute = createRoute({
     404: {
       description: 'Session not found',
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: NotFoundResponseSchema
         }
       }
@@ -238,7 +225,7 @@ const deleteSessionRoute = createRoute({
     429: {
       description: 'Rate limit exceeded',
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: RateLimitResponseSchema
         }
       }
@@ -258,13 +245,7 @@ sessionsRoute.openapi(createSessionRoute, async (c) => {
   const parsed = NewSessionSchema.safeParse(jsonBody.body)
 
   if (!parsed.success) {
-    return c.json(
-      {
-        error: 'Invalid request',
-        details: parsed.error.flatten()
-      },
-      400
-    )
+    return validationFailed(c, parsed.error)
   }
 
   const user = c.get('user')
@@ -290,20 +271,14 @@ sessionsRoute.openapi(updateSessionRoute, async (c) => {
   const parsed = UpdateSessionSchema.safeParse(jsonBody.body)
 
   if (!parsed.success) {
-    return c.json(
-      {
-        error: 'Invalid request',
-        details: parsed.error.flatten()
-      },
-      400
-    )
+    return validationFailed(c, parsed.error)
   }
 
   const user = c.get('user')
   const updated = await sessionsRepo.update(user.sub, c.req.param('id'), parsed.data)
 
   if (!updated) {
-    return c.json({ error: 'Not found' }, 404)
+    return notFound(c)
   }
 
   return c.json(updated, 200)
@@ -314,7 +289,7 @@ sessionsRoute.openapi(deleteSessionRoute, async (c) => {
   const deleted = await sessionsRepo.delete(user.sub, c.req.param('id'))
 
   if (!deleted) {
-    return c.json({ error: 'Not found' }, 404)
+    return notFound(c)
   }
 
   return c.body(null, 204)
