@@ -9,9 +9,10 @@
 - **使用者（你）** — 在三者間搬運訊息、最後 commit
 
 ## 當前狀態
-- **本週**: W3 完 ✅ → 接 W4 前端拆解
+- **本週**: W3 完 ✅ → 接 W4 前端從零打造
 - **執行中**: 無；W3 全部 push 上 origin
-- **下一個 brief**: W4-T01 從 Lerna.html 抽模組到 apps/web（先 grep Lerna.html 場勘再寫 brief）
+- **下一個 brief**: W4-T01 在 apps/web 用 Vite + React 19 + TS PoC `/me` 個人資料卡（呼叫 services/api/me；Lerna.html 不動，當 ground truth）
+- **W4 方向修正（2026-05-03 場勘後）**: Lerna.html 是某次 Vite build 的 minified 產物（源碼從未進 repo），不是手寫 monolith，無模組可抽；apps/web 從零起，不從 Lerna.html 複製 minified code
 
 ## W1 起手式 ✅
 - [x] **W1-T01** monorepo scaffold — Codex Local + Claude 補修
@@ -65,11 +66,12 @@
 | 2026-05-03 | W3-T01 push | feat OpenAPI commit + Claude auth fix commit | 7ca654a / 59b4598 | 兩 commit 順序反了（PowerShell backtick + lock 路徑寫錯造成第一次 commit 失敗）；history fix 在 feat 前但不影響功能 |
 | 2026-05-03 | W3-T02 收尾 | vitest 19/19、typecheck 綠、stdout 無 pino 噪音；Codex 沒偷殺、auth 4 行守住、index.ts 只多 4 行 | 974712e | pino test silent / dev pretty / prod JSON；request-id middleware 用 module augmentation 進 ContextVariableMap |
 | 2026-05-03 | W3-T03 收尾 | vitest 19/19、typecheck 綠、/openapi.json 含 Problem + ValidationProblem schemas；Codex 滿分（沒偷殺、偏離 brief 三個決策都合理且 brief Risk 段已預測） | 7e19001 | 用 `new Response` 直接 set Content-Type（c.json 會 overwrite）；hono-rate-limiter 0.5.3 原生 handler hook |
+| 2026-05-03 | W4 場勘 | Lerna.html 36889 行 / 1.5MB，主 `<script type="module">` 是 React 19 + Vite minified bundle（源碼未進 repo）；`scripts/build-site.js` 只是 copy 不是 build；`apps/web/src/index.ts` = `export {};`；W4-T01 方向從「抽模組」改為「從零打造 PoC `/me` 卡」 | — | doc-only patch：HANDOVER §5/§6 + TASK_BOARD「下一個 brief」+ 不確定性 log 結案 |
 
 ## 不確定性 log
-| 不確定點 | 何時要解 | 負責人 |
-|---|---|---|
-| Lerna.html 內部模組化程度 | W4 開始前 | Claude（grep） |
-| 台灣金流選型 | W11 開始前 | 使用者商業面 |
-| Codex Cloud 任務時長/檔案數上限 | W2-T01 跑完即知 | 使用者驗證 |
-| Hono on Cloudflare Workers vs Node | W10 部署時 | Claude |
+| 不確定點 | 何時要解 | 負責人 | 狀態 |
+|---|---|---|---|
+| ~~Lerna.html 內部模組化程度~~ | W4 開始前 | Claude（grep） | ✅ **結案 2026-05-03**：場勘確認是 minified Vite bundle，源碼未進 repo；W4-T01 改為從零打造 apps/web |
+| 台灣金流選型 | W11 開始前 | 使用者商業面 | open |
+| Codex Cloud 任務時長/檔案數上限 | W2-T01 跑完即知 | 使用者驗證 | open（已知 OK） |
+| Hono on Cloudflare Workers vs Node | W10 部署時 | Claude | open |
