@@ -10,8 +10,8 @@
 
 ## 當前狀態
 - **本週**: W3（觀測性，OpenAPI / logging / errors）
-- **執行中**: W3-T01 brief 已寫好，待使用者放行給 ChatGPT/Codex
-- **下一個 brief**: W3-T01 OpenAPI → W3-T02 logging（pino + request id）→ W3-T03 problem+json 統一錯誤格式（嚴格順序，每件 vitest 全綠才放下一件）
+- **執行中**: 無；等放行 W3-T02
+- **下一個 brief**: W3-T02 logging（pino + request id）→ W3-T03 problem+json 統一錯誤格式（嚴格順序，每件 vitest 全綠才放下一件）
 
 ## W1 起手式 ✅
 - [x] **W1-T01** monorepo scaffold — Codex Local + Claude 補修
@@ -28,8 +28,8 @@
 - [ ] **W2-T05** 真 Postgres / integration test — **跳序到 W10**（部署前再做）
 
 ## W3 觀測性
-- [ ] **W3-T01** OpenAPI spec + Swagger UI — `docs/AI_BRIEFS/W3-T01_openapi.md` — Codex Local
-- [ ] W3-T02 logging + request id（pino，待 brief，等 W3-T01 vitest 全綠）
+- [x] **W3-T01** OpenAPI spec + Swagger UI — vitest 19/19 全綠，/openapi.json 200、/docs 200
+- [ ] W3-T02 logging + request id（pino，待 brief）
 - [ ] W3-T03 統一錯誤格式（problem+json，待 brief，等 W3-T02 vitest 全綠）
 
 ## W4-5 前端拆解（待規劃 brief）
@@ -61,6 +61,7 @@
 | 2026-05-02 | W2-T03 收尾 | vitest 14/14 全綠、Codex 沒亂殺檔（do-not-touch 清單奏效）| 4 commits ahead of origin | 違規檔已退回；root .env.example 待 track |
 | 2026-05-02 | W2-T04 收尾 | vitest 19/19 全綠、do-not-touch 清單 13 檔奏效 | — | Drizzle repo + Supabase migration；default env 仍 in-memory |
 | 2026-05-03 | W3 接班 | Handover 讀畢、W3-T01 OpenAPI brief 已產出 | — | do-not-touch 清單 ~25 檔；新 dep 限 @hono/zod-openapi + @hono/swagger-ui |
+| 2026-05-03 | W3-T01 收尾 | vitest 19/19、typecheck 綠、/openapi.json + /docs 200；Codex 把 auth `app.use('/sessions/:id?')` 簡化成單行 optional segment（vitest 沒 cover 到 401，prod bypass 風險），Claude 直接改回兩行 | — | 教訓：Codex 「簡化 path」要當紅旗看；auth path 不准 optional segment，請見 memory 記錄 |
 
 ## 不確定性 log
 | 不確定點 | 何時要解 | 負責人 |

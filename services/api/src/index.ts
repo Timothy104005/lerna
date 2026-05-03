@@ -1,28 +1,41 @@
 import { serve } from '@hono/node-server'
-import { Hono } from 'hono'
+import { swaggerUI } from '@hono/swagger-ui'
 import { env } from './env'
-import { authMiddleware, type AuthEnv } from './middleware/auth'
+import { authMiddleware } from './middleware/auth'
 import { apiCors } from './middleware/cors'
 import { ipRateLimit } from './middleware/rate-limit'
+import { createOpenApiHono } from './openapi/app'
 import { healthzRoute } from './routes/healthz'
 import { meRoute } from './routes/me'
 import { sessionsRoute } from './routes/sessions'
 
-export const app = new Hono<AuthEnv>()
+export const app = createOpenApiHono()
 
 app.use('*', apiCors)
 app.use('*', ipRateLimit)
 
 // Public routes
 app.route('/healthz', healthzRoute)
+app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
+  type: 'http',
+  scheme: 'bearer',
+  bearerFormat: 'JWT'
+})
+app.doc('/openapi.json', {
+  openapi: '3.0.0',
+  info: {
+    title: 'Lerna API',
+    version: '0.1.0'
+  }
+})
+app.get('/docs', swaggerUI({ url: '/openapi.json' }))
 
 // Protected routes — auth middleware on both exact and prefix paths
 app.use('/me', authMiddleware)
 app.use('/me/*', authMiddleware)
-app.route('/me', meRoute)
-
 app.use('/sessions', authMiddleware)
 app.use('/sessions/*', authMiddleware)
+app.route('/me', meRoute)
 app.route('/sessions', sessionsRoute)
 
 if (env.NODE_ENV !== 'test') {
