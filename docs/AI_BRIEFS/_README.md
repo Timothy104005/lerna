@@ -35,5 +35,6 @@
 - [x] W3-T01 OpenAPI spec + Swagger UI
 - [x] W3-T02 logging + request id
 - [x] W3-T03 統一錯誤格式（problem+json）
+- [ ] W4-T01 apps/web Vite + React 19 + TS PoC `/me` 卡（已釋出 2026-05-03，等 Codex 接手）
 
 未驗證：以下排程根據 `Lerna_執行手冊_v1.0.pdf` 抽樣推估，工時可能偏差。完成 W1 後重新校準。
