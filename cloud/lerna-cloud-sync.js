@@ -15,6 +15,8 @@ import { createClient } from "@supabase/supabase-js";
   const AUTH_KEY = "lerna_cloud_auth_v1";
   const ACTIVE_USER_KEY = "lerna_cloud_active_user_v1";
   const USER_PAYLOAD_PREFIX = "lerna_cloud_user_payload_v1:";
+  const REMOTE_BACKUP_KEY = "lerna_cloud_remote_backup_v1";
+  const CLOUD_LOGIN_NOT_CONFIGURED = "Cloud login is not configured. Please contact the developer.";
   const FALLBACK_ACCENT = "#4a7c74";
 
   let supabase = null;
@@ -217,8 +219,8 @@ import { createClient } from "@supabase/supabase-js";
     if (!email) return null;
     const metadata = user.user_metadata || {};
     return {
-      id: "u1",
-      name: metadata.full_name || metadata.name || email.split("@")[0],
+      id: user.id,
+      name: metadata.name || metadata.full_name || email.split("@")[0] || "Lerna user",
       email
     };
   }
@@ -232,6 +234,7 @@ import { createClient } from "@supabase/supabase-js";
       if (!createIfMissing) return false;
       writeJson(DATA_KEYS.appState, {
         user: profile,
+        meta: { userId: profile.id },
         page: "focus"
       });
       return true;
@@ -244,11 +247,12 @@ import { createClient } from "@supabase/supabase-js";
     const profileEmail = profile.email.toLowerCase();
     const isDefault = !localEmail || localEmail === "hello@lerna.app";
     const sameUser = localEmail === profileEmail;
+    const sameAuthUser = localUser.id === profile.id;
     if (!isDefault && !sameUser) return false;
 
     const nextUser = {
-      id: localUser.id || profile.id,
-      name: localUser.name || profile.name,
+      id: profile.id,
+      name: sameAuthUser && localUser.name ? localUser.name : profile.name,
       email: profile.email
     };
     const changed =
@@ -256,10 +260,15 @@ import { createClient } from "@supabase/supabase-js";
       localUser.id !== nextUser.id ||
       localUser.name !== nextUser.name ||
       localUser.email !== nextUser.email ||
+      state.meta?.userId !== profile.id ||
       state.page === "auth";
     if (!changed) return false;
 
     state.user = nextUser;
+    state.meta = {
+      ...(state.meta || {}),
+      userId: profile.id
+    };
     if (state.page === "auth") state.page = "focus";
     if (app.state) app.state = state;
     writeJson(DATA_KEYS.appState, app);
@@ -337,6 +346,16 @@ import { createClient } from "@supabase/supabase-js";
     Object.values(DATA_KEYS).forEach((key) => localStorage.removeItem(key));
   }
 
+  function clearUserScopedStorage({ includeAuth = false } = {}) {
+    [
+      ...Object.values(DATA_KEYS),
+      REMOTE_BACKUP_KEY,
+      ACTIVE_USER_KEY,
+      META_KEY
+    ].forEach((key) => localStorage.removeItem(key));
+    if (includeAuth) localStorage.removeItem(AUTH_KEY);
+  }
+
   function applyPayloadToPrimaryStorage(payload) {
     if (!payload) {
       clearPrimaryPayload();
@@ -347,18 +366,18 @@ import { createClient } from "@supabase/supabase-js";
     writeJson(DATA_KEYS.v23State, payload.v23State ?? null);
   }
 
-  function activateLocalUser(user, { reason = "unknown", reloadOnSwitch = false } = {}) {
+  function activateLocalUser(user, { reason = "unknown", reloadOnSwitch = false, previousActiveUser = null } = {}) {
     if (!user?.id) return { switched: false };
 
-    const active = readActiveUser();
+    const active = previousActiveUser?.userId ? previousActiveUser : readActiveUser();
     const previousUserId = active.userId || null;
     const switched = !!previousUserId && previousUserId !== user.id;
 
     if (switched) {
       saveUserPayload(active, currentPayload(), `${reason}:previous-user`);
       const storedPayload = readUserPayload(user.id);
+      clearUserScopedStorage({ includeAuth: false });
       applyPayloadToPrimaryStorage(storedPayload);
-      localStorage.removeItem(META_KEY);
       try {
         console.warn("[lerna-cloud] switched local account namespace", {
           previousUserId,
@@ -373,15 +392,18 @@ import { createClient } from "@supabase/supabase-js";
       const storedPayload = readUserPayload(user.id);
       if (storedPayload) {
         if (payloadHasData(currentPayload())) backupLocal();
+        clearUserScopedStorage({ includeAuth: false });
         applyPayloadToPrimaryStorage(storedPayload);
       } else {
         const current = currentPayload();
         if (payloadBelongsToDifferentEmail(current, user)) {
           backupLocal();
-          clearPrimaryPayload();
-          localStorage.removeItem(META_KEY);
+          clearUserScopedStorage({ includeAuth: false });
         }
       }
+    } else if (previousUserId === user.id && !payloadHasData(currentPayload())) {
+      const storedPayload = readUserPayload(user.id);
+      if (storedPayload) applyPayloadToPrimaryStorage(storedPayload);
     }
 
     writeActiveUser(user, reason);
@@ -390,9 +412,7 @@ import { createClient } from "@supabase/supabase-js";
 
   function clearSignedOutUserData(reason = "sign-out") {
     saveCurrentPayloadForActiveUser(reason);
-    clearPrimaryPayload();
-    localStorage.removeItem(META_KEY);
-    localStorage.removeItem(ACTIVE_USER_KEY);
+    clearUserScopedStorage({ includeAuth: true });
   }
 
   function bootstrapAccountIsolation() {
@@ -686,26 +706,32 @@ import { createClient } from "@supabase/supabase-js";
     render();
     try {
       const client = initClient();
-      if (!client) throw new Error(t("setupHint"));
+      if (!client) throw new Error(CLOUD_LOGIN_NOT_CONFIGURED);
+      const previousActiveUser = readActiveUser();
+      saveCurrentPayloadForActiveUser("manual-sign-in-before-auth");
+      clearUserScopedStorage({ includeAuth: true });
       const { data, error } = await client.auth.signInWithPassword({ email, password });
       if (error) throw error;
       session = data?.session || null;
-      if (session?.user) {
-        activateLocalUser(session.user, {
-          reason: "manual-sign-in",
-          reloadOnSwitch: true
-        });
-      }
-      await ensureProfile(session?.user);
-      // Auto-fill in-app profile from gmail when the local identity is still
-      // the default `hello@lerna.app`. Reload so React state catches up.
-      if (syncInAppProfileFromAuth()) {
+      const userResult = await client.auth.getUser();
+      if (userResult.error) throw userResult.error;
+      const authUser = userResult.data?.user || session?.user;
+      if (!authUser?.id) throw new Error(t("authRequired"));
+      activateLocalUser(authUser, {
+        reason: "manual-sign-in",
+        reloadOnSwitch: true,
+        previousActiveUser
+      });
+      await ensureProfile(authUser);
+      if (syncInAppProfileForUser(authUser, { createIfMissing: true })) {
         setTimeout(() => location.reload(), 600);
       }
       setTimeout(() => autoSyncQuiet({ pull: true }), 700);
       setMessage(t("syncOk"), "ok");
+      return { user: authUser, session };
     } catch (error) {
       setMessage(`${t("failed")}: ${error.message || error}`, "error");
+      throw error;
     } finally {
       busy = false;
       render();
@@ -717,21 +743,38 @@ import { createClient } from "@supabase/supabase-js";
     render();
     try {
       const client = initClient();
-      if (!client) throw new Error(t("setupHint"));
+      if (!client) throw new Error(CLOUD_LOGIN_NOT_CONFIGURED);
+      const previousActiveUser = readActiveUser();
+      saveCurrentPayloadForActiveUser("manual-sign-up-before-auth");
+      clearUserScopedStorage({ includeAuth: true });
       const { data, error } = await client.auth.signUp({ email, password });
       if (error) throw error;
       session = data?.session || session;
-      if ((data?.user || session?.user)?.id) {
-        activateLocalUser(data?.user || session.user, {
-          reason: "manual-sign-up",
-          reloadOnSwitch: true
-        });
+      let authUser = null;
+      if (session?.access_token) {
+        const userResult = await client.auth.getUser();
+        if (userResult.error) throw userResult.error;
+        authUser = userResult.data?.user || null;
       }
-      await ensureProfile(data?.user || session?.user);
-      setTimeout(() => autoSyncQuiet({ pull: true }), 700);
+      if (authUser?.id) {
+        activateLocalUser(authUser, {
+          reason: "manual-sign-up",
+          reloadOnSwitch: true,
+          previousActiveUser
+        });
+        await ensureProfile(authUser);
+        syncInAppProfileForUser(authUser, { createIfMissing: true });
+        setTimeout(() => autoSyncQuiet({ pull: true }), 700);
+      }
       setMessage(t("signingUp"), "ok");
+      return {
+        user: authUser,
+        session,
+        pendingConfirmation: !authUser?.id
+      };
     } catch (error) {
       setMessage(`${t("failed")}: ${error.message || error}`, "error");
+      throw error;
     } finally {
       busy = false;
       render();
@@ -1072,7 +1115,6 @@ import { createClient } from "@supabase/supabase-js";
   // copy, but boot/pull sync prefers a newer remote snapshot. Applying a
   // remote snapshot still creates a timestamped local backup first.
   const AUTO_KEY = "lerna_cloud_auto_v1";
-  const REMOTE_BACKUP_KEY = "lerna_cloud_remote_backup_v1";
   const AUTO_INTERVAL_MS = 5 * 60 * 1000; // 5 min push tick
 
   function isAutoMode() {
@@ -1384,11 +1426,23 @@ import { createClient } from "@supabase/supabase-js";
     upload: uploadLocal,
     download: downloadRemote,
     signInWithGoogle,
-    getUser: () => session?.user || readStoredAuthUser(),
+    signInWithPassword: signIn,
+    signUpWithPassword: signUp,
+    signOut,
+    getUser: async () => {
+      const client = initClient();
+      if (!client) return null;
+      const { data, error } = await client.auth.getUser();
+      if (error) throw error;
+      session = data?.user ? session : null;
+      return data?.user || null;
+    },
+    getCachedUser: () => session?.user || readStoredAuthUser(),
     hasConfig: () => {
       const config = readConfig();
       return validUrl(config.url) && !!config.anonKey;
     },
+    clearUserScopedStorage: () => clearUserScopedStorage({ includeAuth: true }),
     autoSync: () => autoSyncQuiet({ pull: true }),
     setAuto: (on) => {
       if (on === false || on === "false") {

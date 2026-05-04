@@ -1,0 +1,14 @@
+{
+  "name": "@lerna/mobile",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "echo \"@lerna/mobile dev stub: Capacitor wiring lands in W9\"",
+    "build": "echo \"@lerna/mobile build stub: no build until W9\"",
+    "typecheck": "echo \"@lerna/mobile typecheck stub: no tsc until W9\"",
+    "lint": "echo \"@lerna/mobile lint stub: eslint will be added in W3\""
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

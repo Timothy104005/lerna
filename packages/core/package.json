@@ -1,0 +1,17 @@
+{
+  "name": "@lerna/core",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "echo \"@lerna/core dev stub: shared types will be added later\"",
+    "build": "echo \"@lerna/core build stub: no build until needed\"",
+    "typecheck": "echo \"@lerna/core typecheck stub: no tsc until shared types added\"",
+    "lint": "echo \"@lerna/core lint stub: eslint will be added in W3\""
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

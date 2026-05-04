@@ -13176,18 +13176,100 @@ Error generating stack: ` +
         d = `ypt_app_state_v6`,
         P = `ypt_app_state_v5`,
         F = `yptpp_v12`;
+      const LERNA_AUTH_CONFIG_ERROR = `Cloud login is not configured. Please contact the developer.`;
+      const LERNA_CLOUD_AUTH_KEY = `lerna_cloud_auth_v1`;
+      const LERNA_CLOUD_ACTIVE_USER_KEY = `lerna_cloud_active_user_v1`;
+      const LERNA_CLOUD_META_KEY = `lerna_cloud_meta_v1`;
+      const LERNA_USER_SCOPED_KEYS = [
+        d,
+        `lerna_ai_v1`,
+        `ypt_v23_upgrade_v1`,
+        `lerna_cloud_remote_backup_v1`,
+        LERNA_CLOUD_ACTIVE_USER_KEY,
+        LERNA_CLOUD_META_KEY,
+      ];
+      function readLernaStoredJson(e) {
+        try {
+          let t = localStorage.getItem(e);
+          return t ? JSON.parse(t) : null;
+        } catch {
+          return null;
+        }
+      }
+      function readLernaStoredAuthUser() {
+        let e = readLernaStoredJson(LERNA_CLOUD_AUTH_KEY),
+          t =
+            e?.user ||
+            e?.currentSession?.user ||
+            e?.session?.user ||
+            e?.data?.session?.user ||
+            null;
+        return t?.id
+          ? {
+              id: t.id,
+              email: t.email || t.user_metadata?.email || ``,
+              user_metadata: t.user_metadata || {},
+            }
+          : null;
+      }
+      function lernaAuthDisplayName(e, t = ``) {
+        let n = String(e?.email || ``).trim(),
+          r = e?.user_metadata || {};
+        return (
+          r.name ||
+          r.full_name ||
+          String(t || ``).trim() ||
+          (n ? n.split(`@`)[0] : ``) ||
+          `Lerna user`
+        );
+      }
+      function withLernaAuthIdentity(e, t, n = ``) {
+        if (!t?.id) return null;
+        let r = String(t.email || ``).trim(),
+          i = e && typeof e == `object` ? { ...e } : {},
+          a =
+            i.state && typeof i.state == `object`
+              ? { ...i.state }
+              : i,
+          o = a.user || {},
+          s = o.id === t.id;
+        return (
+          (a.user = {
+            ...o,
+            id: t.id,
+            name: s && o.name ? o.name : lernaAuthDisplayName(t, n),
+            email: r,
+          }),
+          (a.meta = { ...(a.meta || {}), userId: t.id }),
+          (a.page = a.page && a.page !== `auth` ? a.page : `focus`),
+          i.state ? { ...i, state: a } : a
+        );
+      }
+      function clearLernaUserScopedStorage({ includeAuth: e = !1 } = {}) {
+        try {
+          LERNA_USER_SCOPED_KEYS.forEach((e) => localStorage.removeItem(e));
+          e && localStorage.removeItem(LERNA_CLOUD_AUTH_KEY);
+        } catch {}
+      }
       function f() {
         try {
-          let e = localStorage.getItem(d);
-          if (e) return JSON.parse(e);
-          let t = parseStoredState(P),
-            n = parseStoredState(F);
-          if (!t && !n) return null;
+          let e = readLernaStoredAuthUser(),
+            rawState = localStorage.getItem(d);
+          if (rawState) {
+            if (!e?.id) return (clearLernaUserScopedStorage(), null);
+            let parsedState = withLernaAuthIdentity(JSON.parse(rawState), e);
+            return (parsedState && p(parsedState), parsedState);
+          }
+          let legacyV5 = parseStoredState(P),
+            legacyV12 = parseStoredState(F);
+          if (!legacyV5 && !legacyV12) return null;
+          if (!e?.id) return (clearLernaUserScopedStorage(), null);
           let r = {
-            ...(t || {}),
-            decks: mergeLearnDecks(t?.decks ?? [], n?.decks ?? []),
-            notes: mergeLearnNotes(t?.notes ?? [], n?.notes ?? []),
+            ...(legacyV5 || {}),
+            decks: mergeLearnDecks(legacyV5?.decks ?? [], legacyV12?.decks ?? []),
+            notes: mergeLearnNotes(legacyV5?.notes ?? [], legacyV12?.notes ?? []),
           };
+          r = withLernaAuthIdentity(r, e);
           return (p(r), r);
         } catch {
           return null;
@@ -13195,7 +13277,18 @@ Error generating stack: ` +
       }
       function p(e) {
         try {
-          localStorage.setItem(d, JSON.stringify(e));
+          let t = e?.state || e;
+          if (!t?.user) {
+            localStorage.removeItem(d);
+            return;
+          }
+          let n = readLernaStoredAuthUser();
+          if (!n?.id) {
+            clearLernaUserScopedStorage();
+            return;
+          }
+          let r = withLernaAuthIdentity(e, n);
+          r && localStorage.setItem(d, JSON.stringify(r));
         } catch {}
       }
       function parseStoredState(e) {
@@ -14198,34 +14291,93 @@ Error generating stack: ` +
             }, 1e3);
             return () => clearInterval(n);
           }, [e.cycleActive, e.cycleRunning]));
-        let r = (e) => t((t) => ({ ...t, ...e })),
-          i = (e, n) => t((t) => ({ ...t, page: e, ...n })),
-          a = (e, n) => {
-            t((t) => {
-              let r =
-                t.subjects.length > 0
-                  ? t.subjects
-                  : t.settings.lang === `zh`
+        let makeAuthenticatedState = (e, n = ``) => {
+            let r = T(),
+              i = f(),
+              a = i ? { ...r, ...i } : r,
+              o =
+                a.subjects && a.subjects.length > 0
+                  ? a.subjects
+                  : a.settings?.lang === `zh`
                     ? y
-                    : b;
-              return {
-                ...t,
-                user: { id: `u1`, name: n || e.split(`@`)[0], email: e },
+                    : b,
+              s = {
+                ...a,
                 page: `focus`,
-                subjects: r,
-                decks: t.decks || [],
-                notes: t.notes || [],
+                timerState: `idle`,
+                timerSeconds: 0,
+                pendingSessionForReflection: void 0,
+                managedFocusActive: !1,
+                fullscreenActive: !1,
+                cycleActive: !1,
+                cycleRunning: !1,
+                cyclePhase: `focus`,
+                cycleCount: 0,
+                cycleSecondsLeft: 0,
+                cycleTodayCount: 0,
+                subjects: o,
+                decks: a.decks || [],
+                notes: a.notes || [],
+                settings: {
+                  ...r.settings,
+                  ...(a.settings ?? {}),
+                  platformCapability: m(),
+                },
+                allowlist: normalizeAllowlist(a.allowlist, r.allowlist),
+                restrictionProfiles: r.restrictionProfiles,
               };
-            });
+            return withLernaAuthIdentity(s, e, n) || s;
           },
-          o = () =>
-            t((e) => ({
-              ...e,
-              user: null,
-              page: `auth`,
-              timerState: `idle`,
-              timerSeconds: 0,
-            })),
+          r = (e) => t((t) => ({ ...t, ...e })),
+          i = (e, n) => t((t) => ({ ...t, page: e, ...n })),
+          a = async (e, n, r, i = `signin`) => {
+            let a = window.__LernaCloudSync;
+            if (
+              !a ||
+              typeof a.hasConfig != `function` ||
+              !a.hasConfig() ||
+              typeof a.signInWithPassword != `function` ||
+              typeof a.signUpWithPassword != `function`
+            )
+              throw Error(LERNA_AUTH_CONFIG_ERROR);
+            let o =
+              i === `signup`
+                ? await a.signUpWithPassword(e, n)
+                : await a.signInWithPassword(e, n);
+            if (o?.pendingConfirmation) return o;
+            let s = o?.user;
+            if (!s?.id && typeof a.getUser == `function`) s = await a.getUser();
+            if (!s?.id) throw Error(`Authentication failed. Please try again.`);
+            let c = makeAuthenticatedState(s, r);
+            return (t(c), p(c), { user: s });
+          },
+          o = async () => {
+            try {
+              let e = window.__LernaCloudSync;
+              typeof e?.signOut == `function`
+                ? await e.signOut()
+                : clearLernaUserScopedStorage({ includeAuth: !0 });
+            } finally {
+              clearLernaUserScopedStorage({ includeAuth: !0 });
+              t((e) => {
+                let t = T();
+                return {
+                  ...t,
+                  user: null,
+                  page: `auth`,
+                  timerState: `idle`,
+                  timerSeconds: 0,
+                  settings: {
+                    ...t.settings,
+                    lang: e.settings?.lang ?? t.settings.lang,
+                    accent: e.settings?.accent ?? t.settings.accent,
+                    platformCapability: m(),
+                  },
+                };
+              });
+              setTimeout(() => location.reload(), 150);
+            }
+          },
           s = () => t((e) => ({ ...e, timerState: `focusing` })),
           c = () =>
             t((e) => {
@@ -14352,15 +14504,17 @@ Error generating stack: ` +
               countdowns: t.countdowns.filter((t) => t.id !== e),
             })),
           re = (n) => {
+            let currentUserId = e.user?.id || readLernaStoredAuthUser()?.id;
+            if (!currentUserId) return;
             let r = Math.random().toString(36).slice(2, 8).toUpperCase(),
               i = {
                 id: `g${Date.now()}`,
                 name: n,
                 code: r,
-                leaderId: `u1`,
+                leaderId: currentUserId,
                 members: [
                   {
-                    id: `u1`,
+                    id: currentUserId,
                     name: e.user?.name || `You`,
                     role: `leader`,
                     focusMinutesToday: 0,
@@ -15759,18 +15913,28 @@ Error generating stack: ` +
                   ),
                 }),
                 (0, k.jsxs)(`form`, {
-                  onSubmit: (e) => {
-                    e.preventDefault();
+                  onSubmit: async (event) => {
+                    event.preventDefault();
                     let n = g();
                     if (n) {
                       h(n);
                       return;
                     }
-                    (h(``),
-                      p(!0),
-                      setTimeout(() => {
-                        (t(a, r === `signup` ? u : void 0), p(!1));
-                      }, 600));
+                    h(``);
+                    p(!0);
+                    try {
+                      let n = await t(a.trim(), s, r === `signup` ? u.trim() : ``, r);
+                      n?.pendingConfirmation &&
+                        h(
+                          e === `zh`
+                            ? `帳號已建立。若需要 email 驗證，請先到信箱確認後再登入。`
+                            : `Account created. If email confirmation is required, check your inbox before signing in.`,
+                        );
+                    } catch (e) {
+                      h(e?.message || String(e));
+                    } finally {
+                      p(!1);
+                    }
                   },
                   className: `space-y-4`,
                   children: [
@@ -20958,7 +21122,7 @@ Error generating stack: ` +
 
         // Member row for ranking
         const MemberRow = ({ m, idx, showMe = true }) => {
-          const isMe = m.id === "u1" || m.id === `m1`;
+          const isMe = m.id === t.user?.id;
           const ranked = rankMembers(selGroup?.members || []);
           const dimVal = getDimValue(m);
           const goalPct = Math.min(
@@ -36846,7 +37010,7 @@ ${(w.examples||[]).map(x=>'• '+x).join('\n')}</div>
   }
   function myId(app) {
     const s = app || readApp();
-    return String((s.user && s.user.id) || (s.profile && s.profile.id) || (s.settings && s.settings.userId) || 'u1');
+    return String((s.user && s.user.id) || (s.meta && s.meta.userId) || (s.profile && s.profile.id) || (s.settings && s.settings.userId) || '');
   }
   function myName(app) {
     const s = app || readApp();
